@@ -1,0 +1,2365 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NexaInvest v2.6 - Portal Berita Finansial, Kamus 100+ & Simulator Interaktif</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#0b1329',
+                        },
+                        darkbg: '#030712',
+                        cardbg: '#0b1329',
+                        borderbg: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'progress': 'progress 12s linear infinite',
+                        'wallpaper-drift': 'wallpaperDrift 20s ease-in-out infinite alternate',
+                        'particle-float': 'particleFloat 10s linear infinite'
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' }
+                        },
+                        progress: {
+                            '0%': { width: '0%' },
+                            '100%': { width: '100%' }
+                        },
+                        wallpaperDrift: {
+                            '0%': { transform: 'scale(1) translate(0px, 0px)' },
+                            '50%': { transform: 'scale(1.05) translate(-15px, -10px)' },
+                            '100%': { transform: 'scale(1.08) translate(10px, 15px)' }
+                        },
+                        particleFloat: {
+                            '0%': { transform: 'translateY(0px) translateX(0px)', opacity: '0.2' },
+                            '50%': { opacity: '0.6' },
+                            '100%': { transform: 'translateY(-120px) translateX(40px)', opacity: '0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+        .ticker-wrap {
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        .ticker-move {
+            display: inline-block;
+            animation: ticker 35s linear infinite;
+        }
+        .ticker-move:hover {
+            animation-play-state: paused;
+        }
+        @keyframes ticker {
+            0% { transform: translate3d(0, 0, 0); }
+            100% { transform: translate3d(-50%, 0, 0); }
+        }
+        ::-webkit-scrollbar {
+            width: 7px;
+            height: 7px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #080d1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e3a8a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+        .glass-panel {
+            background: rgba(11, 19, 41, 0.85);
+            backdrop-filter: blur(14px);
+            border: 1px solid rgba(30, 58, 138, 0.4);
+        }
+        .glass-panel:hover {
+            border-color: rgba(59, 130, 246, 0.6);
+        }
+        .glow-effect {
+            box-shadow: 0 0 30px -5px rgba(37, 99, 235, 0.3);
+        }
+        .modal-blur {
+            backdrop-filter: blur(8px);
+        }
+        .quote-progress {
+            animation: quoteTimerBar 12s linear infinite;
+        }
+        @keyframes quoteTimerBar {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+    </style>
+</head>
+<body class="bg-darkbg text-slate-100 flex flex-col min-h-screen selection:bg-brand-500 selection:text-white">
+
+    <!-- TOP RUNNING MARKET TICKER WITH LIVE RANDOM FLUCTUATION -->
+    <div class="bg-slate-950 border-b border-brand-900/60 text-xs py-2 text-slate-300 relative z-50">
+        <div class="max-w-7xl mx-auto px-4 flex items-center justify-between">
+            <div class="flex items-center space-x-2 shrink-0 pr-4 bg-slate-950 z-10 border-r border-slate-800">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span class="font-mono text-[11px] font-bold text-emerald-400 uppercase tracking-wider">PASAR AKTIF</span>
+                <button onclick="toggleTickSimulation()" title="Simulasi Pergerakan Harga Live" class="text-[10px] bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 px-1.5 py-0.5 rounded transition">
+                    <i id="tickIcon" class="fa-solid fa-play text-emerald-400 mr-1"></i> Live Tick
+                </button>
+            </div>
+            
+            <div class="ticker-wrap flex items-center">
+                <div id="tickerContent" class="ticker-move flex items-center space-x-6 text-[11px] font-mono">
+                    <!-- Dynamic Injected Ticker Items -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- STICKY MAIN HEADER NAVIGATION (SHORTENED LABELS) -->
+    <header class="sticky top-0 z-40 bg-slate-950/90 backdrop-blur-md border-b border-brand-900/60 shadow-xl shadow-black/60">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Brand Logo & Badge -->
+                <div class="flex items-center space-x-3">
+                    <button onclick="switchCategory('beranda')" class="flex items-center space-x-3 group text-left">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-700 via-brand-500 to-cyan-400 p-0.5 shadow-lg shadow-brand-600/40 group-hover:scale-105 transition-transform duration-300">
+                            <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                                <i class="fa-solid fa-chart-line text-brand-400 text-xl"></i>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-2xl font-black tracking-wider text-white">NEXA<span class="text-brand-500">INVEST</span></span>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-[10px] bg-brand-950 text-brand-400 px-2 py-0.5 rounded border border-brand-800 font-mono font-bold">SMK TKJ NETWORKS</span>
+                                <span class="text-[10px] text-amber-400 font-semibold bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-900 hidden sm:inline"><i class="fa-solid fa-fire mr-0.5"></i> Motivasi 12s & Kamus 100+</span>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- Desktop Menu (Shortened) -->
+                <nav class="hidden lg:flex items-center space-x-1 font-medium text-xs">
+                    <button onclick="switchCategory('beranda')" id="nav-beranda" class="nav-btn px-3 py-2 rounded-lg text-brand-400 bg-brand-950/80 border border-brand-800/80 font-bold transition-all">
+                        <i class="fa-solid fa-house mr-1.5"></i> Beranda
+                    </button>
+                    <button onclick="switchCategory('pasar-modal')" id="nav-pasar-modal" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-brand-400 hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-chart-pie mr-1.5"></i> Pasar
+                    </button>
+                    <button onclick="switchCategory('aksi-korporasi')" id="nav-aksi-korporasi" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-brand-400 hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-building-columns mr-1.5"></i> Korporasi
+                    </button>
+                    <button onclick="switchCategory('reksa-dana')" id="nav-reksa-dana" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-brand-400 hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-vault mr-1.5"></i> Reksa Dana
+                    </button>
+                    <button onclick="switchCategory('obligasi')" id="nav-obligasi" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-brand-400 hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-file-contract mr-1.5"></i> Obligasi
+                    </button>
+                    <button onclick="switchCategory('analisis-strategi')" id="nav-analisis-strategi" class="nav-btn px-3 py-2 rounded-lg text-slate-300 hover:text-brand-400 hover:bg-slate-900 transition-all">
+                        <i class="fa-solid fa-lightbulb mr-1.5"></i> Analisis
+                    </button>
+                    <button onclick="switchCategory('glosarium')" id="nav-glosarium" class="nav-btn px-3 py-2 rounded-lg text-cyan-400 bg-cyan-950/40 border border-cyan-800/80 font-bold transition-all">
+                        <i class="fa-solid fa-book-bookmark mr-1.5"></i> Kamus (100+)
+                    </button>
+                    <button onclick="switchCategory('simulator-hub')" id="nav-simulator-hub" class="nav-btn px-3 py-2 rounded-lg text-emerald-400 bg-emerald-950/60 border border-emerald-800/80 font-bold transition-all hover:bg-emerald-900/80">
+                        <i class="fa-solid fa-laptop-code mr-1.5"></i> Simulator
+                    </button>
+                </nav>
+
+                <!-- Actions Header Tools -->
+                <div class="hidden sm:flex items-center space-x-2">
+                    <!-- Global Search -->
+                    <div class="relative">
+                        <input type="text" id="searchInput" oninput="handleGlobalSearch()" placeholder="Cari berita / istilah..." class="w-32 lg:w-40 bg-slate-900 border border-brand-900/80 focus:border-brand-500 text-xs text-white rounded-lg pl-8 pr-3 py-2 focus:outline-none transition-all">
+                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                    </div>
+
+                    <!-- Bookmarks Modal Trigger -->
+                    <button onclick="openBookmarksModal()" title="Artikel Tersimpan" class="p-2 bg-slate-900 hover:bg-brand-950 text-slate-300 hover:text-brand-400 border border-slate-800 rounded-lg text-xs relative transition-all">
+                        <i class="fa-solid fa-bookmark"></i>
+                        <span id="bookmarkCount" class="absolute -top-1.5 -right-1.5 bg-brand-600 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                    </button>
+
+                    <!-- Risk Quiz Modal Trigger -->
+                    <button onclick="openRiskQuizModal()" title="Kuis Profil Risiko Investor" class="px-2.5 py-2 bg-slate-900 hover:bg-brand-900 text-cyan-400 border border-cyan-900/60 rounded-lg text-xs font-semibold flex items-center space-x-1 transition-all">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span class="hidden xl:inline">Tes Profil Risiko</span>
+                    </button>
+
+                    <!-- Calculator Modal Trigger -->
+                    <button onclick="openCalcModal()" class="px-3 py-2 bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-500 hover:to-brand-600 text-white rounded-lg text-xs font-bold shadow-md shadow-brand-700/30 flex items-center space-x-1.5 transition-all">
+                        <i class="fa-solid fa-calculator"></i>
+                        <span class="hidden sm:inline">Kalkulator</span>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Hamburger -->
+                <div class="flex lg:hidden items-center space-x-2">
+                    <button onclick="openCalcModal()" class="p-2 bg-brand-950 border border-brand-800 text-brand-400 rounded-lg text-xs">
+                        <i class="fa-solid fa-calculator"></i>
+                    </button>
+                    <button id="mobileMenuBtn" onclick="toggleMobileMenu()" class="p-2.5 text-slate-300 hover:text-white rounded-lg bg-slate-900 border border-slate-800">
+                        <i class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Drawer -->
+        <div id="mobileMenu" class="hidden lg:hidden bg-slate-950 border-b border-brand-900 px-4 pt-3 pb-6 space-y-2">
+            <div class="grid grid-cols-2 gap-2 mb-2">
+                <button onclick="openRiskQuizModal(); toggleMobileMenu()" class="p-2.5 bg-slate-900 border border-slate-800 text-cyan-400 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <span>Tes Profil Risiko</span>
+                </button>
+                <button onclick="openBookmarksModal(); toggleMobileMenu()" class="p-2.5 bg-slate-900 border border-slate-800 text-brand-400 rounded-lg text-xs font-bold flex items-center justify-center space-x-1.5">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span>Tersimpan</span>
+                </button>
+            </div>
+            <button onclick="switchCategory('beranda'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-brand-400 bg-brand-950 font-semibold flex items-center">
+                <i class="fa-solid fa-house w-6 text-brand-400"></i> Beranda
+            </button>
+            <button onclick="switchCategory('pasar-modal'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-900 flex items-center">
+                <i class="fa-solid fa-chart-pie w-6 text-brand-400"></i> Pasar & IHSG
+            </button>
+            <button onclick="switchCategory('aksi-korporasi'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-900 flex items-center">
+                <i class="fa-solid fa-building-columns w-6 text-brand-400"></i> Korporasi & Dividen
+            </button>
+            <button onclick="switchCategory('reksa-dana'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-900 flex items-center">
+                <i class="fa-solid fa-vault w-6 text-brand-400"></i> Reksa Dana
+            </button>
+            <button onclick="switchCategory('obligasi'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-900 flex items-center">
+                <i class="fa-solid fa-file-contract w-6 text-brand-400"></i> Obligasi Negara (SBN)
+            </button>
+            <button onclick="switchCategory('analisis-strategi'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-300 hover:bg-slate-900 flex items-center">
+                <i class="fa-solid fa-lightbulb w-6 text-brand-400"></i> Analisis & Strategi
+            </button>
+            <button onclick="switchCategory('glosarium'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-cyan-400 font-bold bg-cyan-950/40 border border-cyan-900 flex items-center">
+                <i class="fa-solid fa-book-bookmark w-6 text-cyan-400"></i> Kamus Finansial (100+ Istilah)
+            </button>
+            <button onclick="switchCategory('simulator-hub'); toggleMobileMenu()" class="w-full text-left px-3 py-2 rounded-lg text-xs text-emerald-400 font-bold bg-emerald-950/50 border border-emerald-900 flex items-center">
+                <i class="fa-solid fa-laptop-code w-6 text-emerald-400"></i> Simulator Portofolio
+            </button>
+        </div>
+    </header>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="toastNotification" class="fixed top-24 right-5 z-50 transform translate-x-full transition-transform duration-300 max-w-sm w-full bg-slate-900 border border-brand-500 rounded-xl p-4 shadow-2xl flex items-start space-x-3">
+        <div id="toastIcon" class="w-8 h-8 rounded-lg bg-brand-900 text-brand-400 flex items-center justify-center shrink-0">
+            <i class="fa-solid fa-bell text-sm"></i>
+        </div>
+        <div class="flex-1 text-xs">
+            <h4 id="toastTitle" class="font-bold text-white">Notifikasi Real-time</h4>
+            <p id="toastMessage" class="text-slate-300 mt-0.5">Sistem memuat pembaruan data terkini.</p>
+        </div>
+        <button onclick="hideToast()" class="text-slate-400 hover:text-white text-xs">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+    </div>
+
+    <!-- MAIN CONTENT CONTAINER -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+
+        <!-- MOTIVATION BANNER (AUTO-ROTATING 10 QUOTES EVERY 12 SECONDS WITH PROGRESS TIMER) -->
+        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-amber-950/80 via-slate-900 to-brand-950/90 border border-amber-500/40 p-6 shadow-2xl">
+            <!-- Progress Bar Top Line -->
+            <div class="absolute top-0 left-0 right-0 h-1 bg-slate-800/60 overflow-hidden">
+                <div id="quoteProgressBar" class="h-full bg-gradient-to-r from-amber-400 to-amber-500 quote-progress"></div>
+            </div>
+
+            <div class="absolute -right-10 -bottom-10 opacity-10 pointer-events-none">
+                <i class="fa-solid fa-fire text-amber-400 text-[180px]"></i>
+            </div>
+            
+            <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+                <div class="space-y-2 max-w-3xl">
+                    <div class="flex items-center space-x-3">
+                        <div class="inline-flex items-center space-x-2 bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[11px] font-bold font-mono px-3 py-1 rounded-full uppercase tracking-wider">
+                            <i class="fa-solid fa-fire text-amber-400 animate-pulse"></i>
+                            <span>Kata Motivasi Investor • Auto-Slide Setiap 12 Detik (11 Quotes)</span>
+                        </div>
+                        <span id="quoteIndexIndicator" class="text-xs font-mono text-amber-400/80 font-bold">1 / 10</span>
+                    </div>
+
+                    <div class="min-h-[70px] flex flex-col justify-center">
+                        <blockquote id="motivationalQuote" class="text-base sm:text-lg font-bold text-slate-100 italic leading-snug transition-opacity duration-300">
+                            "Pasar saham adalah instrumen yang memindahkan uang dari orang yang tidak sabar kepada orang yang sabar. Konsistensi dan disiplin adalah kunci sukses utama."
+                        </blockquote>
+                        <p id="quoteAuthor" class="text-xs font-mono font-semibold text-amber-400 mt-1 transition-opacity duration-300">— Warren Buffett (Investor Legendaris Dunia)</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-center gap-2 shrink-0 w-full md:w-auto">
+                    <!-- Nav Controls -->
+                    <div class="flex items-center space-x-1 w-full sm:w-auto justify-center">
+                        <button onclick="prevQuote()" title="Kata Motivasi Sebelumnya" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-amber-500/30 text-amber-300 rounded-xl transition">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                        </button>
+                        <button onclick="toggleQuoteAutoPlay()" id="quotePauseBtn" title="Jeda / Putar Auto Slide" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-amber-500/30 text-amber-300 rounded-xl transition font-mono text-xs font-bold px-3">
+                            <i class="fa-solid fa-pause text-xs mr-1"></i> Auto
+                        </button>
+                        <button onclick="nextQuote()" title="Kata Motivasi Selanjutnya" class="p-2.5 bg-slate-900/90 hover:bg-slate-800 border border-amber-500/30 text-amber-300 rounded-xl transition">
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </button>
+                    </div>
+
+                    <button onclick="switchCategory('glosarium')" class="w-full sm:w-auto px-4 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs rounded-xl transition-all shadow-lg shadow-amber-500/20 flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-book-open"></i>
+                        <span>Pelajari Kamus (100+)</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header Category Banner -->
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-900/50 pb-6">
+            <div>
+                <div class="inline-flex items-center space-x-2 text-xs font-bold text-brand-400 uppercase tracking-widest bg-brand-950/90 border border-brand-800/80 px-3 py-1 rounded-full mb-2">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span id="categoryBadge">Update Pasar Real-Time</span>
+                </div>
+                <h1 id="categoryTitle" class="text-3xl sm:text-4xl font-black text-white tracking-tight">Portal Berita Finansial & Simulator</h1>
+                <p id="categoryDescription" class="text-slate-400 text-xs sm:text-sm mt-1 max-w-3xl">
+                    Pusat analisis finansial, berita pasar modal, strategi portofolio saham, simulator investasi virtual, serta kamus istilah investasi terlengkap dengan 100+ istilah dan ilustrasi diagram visual.
+                </p>
+            </div>
+
+            <!-- News Quick Filter Pills -->
+            <div id="newsFilterContainer" class="flex items-center space-x-2 overflow-x-auto pb-2 md:pb-0">
+                <button onclick="filterNewsCategory('all')" class="filter-pill bg-brand-600 text-white text-xs px-3.5 py-1.5 rounded-full font-bold transition-all shadow-md shadow-brand-600/30 shrink-0">Semua</button>
+                <button onclick="filterNewsCategory('trending')" class="filter-pill bg-slate-900 hover:bg-brand-900 text-slate-300 text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border border-slate-800 shrink-0"><i class="fa-solid fa-fire text-amber-400 mr-1"></i> Trending</button>
+                <button onclick="filterNewsCategory('headline')" class="filter-pill bg-slate-900 hover:bg-brand-900 text-slate-300 text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border border-slate-800 shrink-0"><i class="fa-solid fa-bolt text-cyan-400 mr-1"></i> Headline</button>
+                <button onclick="filterNewsCategory('edukasi')" class="filter-pill bg-slate-900 hover:bg-brand-900 text-slate-300 text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border border-slate-800 shrink-0"><i class="fa-solid fa-graduation-cap text-emerald-400 mr-1"></i> Edukasi</button>
+            </div>
+        </div>
+
+        <!-- VIEW 1: BERANDA (HOME VIEW WITH MOVING WALLPAPER / BACKGROUND ELEMENT) -->
+        <div id="view-beranda" class="category-view space-y-10 relative">
+
+            <!-- MOVING WALLPAPER BACKGROUND ELEMENT (DYNAMICALLY DRIFTING CANDLESTICK & NEURAL PATTERN) -->
+            <div class="absolute inset-0 -z-10 overflow-hidden pointer-events-none rounded-3xl opacity-20">
+                <div class="absolute w-[800px] h-[800px] -top-40 -left-40 bg-gradient-to-tr from-brand-600 via-cyan-500 to-indigo-600 rounded-full blur-[120px] animate-wallpaper-drift"></div>
+                <div class="absolute w-[600px] h-[600px] top-1/2 -right-20 bg-gradient-to-bl from-emerald-600 via-brand-700 to-transparent rounded-full blur-[100px] animate-wallpaper-drift" style="animation-delay: -5s;"></div>
+                <!-- Floating Particle Grid Overlay -->
+                <div class="absolute inset-0 bg-[radial-gradient(#1e3a8a_1px,transparent_1px)] [background-size:24px_24px] opacity-30 animate-pulse-slow"></div>
+            </div>
+
+            <!-- Hero Section: Featured Article + Live Interactive Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Main Featured Card -->
+                <div class="lg:col-span-8 group cursor-pointer" onclick="openArticleModal(1)">
+                    <div class="relative h-[380px] sm:h-[460px] rounded-2xl overflow-hidden border border-brand-900/80 shadow-2xl shadow-blue-950/40 glow-effect">
+                        <img src="https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80" alt="IHSG Chart" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 opacity-60">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent"></div>
+                        
+                        <div class="absolute top-4 left-4 flex space-x-2">
+                            <span class="bg-brand-600 text-white text-xs font-extrabold px-3 py-1 rounded-md shadow">Pasar Modal</span>
+                            <span class="bg-slate-900/80 text-cyan-400 border border-cyan-500/30 text-xs font-semibold px-2.5 py-1 rounded-md backdrop-blur-md"><i class="fa-solid fa-bolt mr-1"></i> Headline Utama</span>
+                        </div>
+
+                        <div class="absolute bottom-0 left-0 right-0 p-6 sm:p-8 space-y-3">
+                            <div class="flex items-center space-x-3 text-xs text-slate-300">
+                                <span><i class="fa-regular fa-clock mr-1 text-brand-400"></i> Hari ini, 15:30 WIB</span>
+                                <span>•</span>
+                                <span><i class="fa-solid fa-user-pen mr-1 text-brand-400"></i> Tim Analis NexaInvest</span>
+                                <span>•</span>
+                                <span class="text-amber-400"><i class="fa-solid fa-eye mr-1"></i> 4.2k Pembaca</span>
+                            </div>
+                            <h2 class="text-2xl sm:text-3xl font-black text-white leading-tight group-hover:text-brand-400 transition-colors">
+                                IHSG Menembus Rekor Baru 7,325 Didorong Aksi Beli Bersih Investor Asing Pada Saham Perbankan Big Cap
+                            </h2>
+                            <p class="text-slate-300 text-xs sm:text-sm line-clamp-2">
+                                Sektor keuangan memimpin penguatan bursa dengan saham BBCA, BBRI, dan BMRI mencatatkan nilai transaksi tertinggi. Total Net Foreign Inflow mencapai Rp 640 Miliar dalam sehari.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- IHSG Live Chart Widget & Sector Heatmap -->
+                <div class="lg:col-span-4 flex flex-col justify-between space-y-4">
+                    <div class="glass-panel p-5 rounded-2xl flex-1 flex flex-col justify-between shadow-xl">
+                        <div class="flex justify-between items-center mb-3">
+                            <div>
+                                <h3 class="font-bold text-white text-sm flex items-center">
+                                    <i class="fa-solid fa-chart-area text-brand-400 mr-2"></i> Pergerakan Indeks IHSG
+                                </h3>
+                                <p class="text-[11px] text-slate-400">Sesi Perdagangan Real-Time</p>
+                            </div>
+                            <div class="text-right">
+                                <span id="ihsgValueHome" class="text-sm font-black font-mono text-white block">7,325.40</span>
+                                <span class="text-xs bg-emerald-950 text-emerald-400 border border-emerald-800/80 font-mono font-bold px-2 py-0.5 rounded">
+                                    +0.45%
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Chart Home -->
+                        <div class="h-44 w-full my-2">
+                            <canvas id="ihsgChartHome"></canvas>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2 text-xs pt-3 border-t border-slate-800 font-mono">
+                            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60">
+                                <span class="text-slate-400 block text-[10px]">Tertinggi (High)</span>
+                                <span class="font-bold text-emerald-400">7,340.12</span>
+                            </div>
+                            <div class="bg-slate-900/80 p-2 rounded-lg border border-slate-800/60">
+                                <span class="text-slate-400 block text-[10px]">Terendah (Low)</span>
+                                <span class="font-bold text-rose-400">7,298.50</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sector Heatmap Brief -->
+                    <div class="glass-panel p-4 rounded-2xl space-y-2">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-slate-300">Sektor Penggerak Bursa</span>
+                            <span class="text-[11px] text-brand-400">Keuangan (+1.8%)</span>
+                        </div>
+                        <div class="grid grid-cols-3 gap-1.5 text-[10px] text-center font-mono font-bold">
+                            <div class="bg-emerald-950/80 text-emerald-400 p-1.5 rounded border border-emerald-800/60">FINANCE +1.8%</div>
+                            <div class="bg-emerald-950/80 text-emerald-400 p-1.5 rounded border border-emerald-800/60">INFRA +0.9%</div>
+                            <div class="bg-rose-950/80 text-rose-400 p-1.5 rounded border border-rose-800/60">ENERGY -0.4%</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- FEATURE WIDGET: Interactive Stock Watchlist & Mini Portfolio Simulator -->
+            <div class="glass-panel p-6 rounded-2xl border border-brand-800/70 shadow-2xl relative overflow-hidden">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <span class="bg-brand-950 text-brand-400 text-[10px] font-mono px-2 py-0.5 rounded border border-brand-800 font-bold uppercase">Simulasi Interaktif</span>
+                            <h3 class="text-xl font-bold text-white">Watchlist & Tracker Portofolio Saham</h3>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1">Uji coba simulasi perhitungan keuntungan portofolio saham secara real-time di browser Anda.</p>
+                    </div>
+
+                    <div class="flex items-center space-x-2">
+                        <button onclick="switchCategory('simulator-hub')" class="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-lg transition-all shadow-md shadow-emerald-600/30">
+                            <i class="fa-solid fa-laptop-code mr-1"></i> Buka Simulator Hub
+                        </button>
+                        <button onclick="resetWatchlistToDefault()" class="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-semibold rounded-lg border border-slate-800 transition-all">
+                            <i class="fa-solid fa-rotate-right mr-1"></i> Reset Contoh
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <!-- Form Input Watchlist -->
+                    <div class="lg:col-span-4 bg-slate-950 p-4 rounded-xl border border-slate-800/80 space-y-3 text-xs">
+                        <h4 class="font-bold text-white flex items-center">
+                            <i class="fa-solid fa-plus-circle text-brand-400 mr-2"></i> Tambah Saham Ke Portofolio
+                        </h4>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Kode Saham (Emiten)</label>
+                            <input type="text" id="simCode" placeholder="Misal: BBCA, TLKM, ASII" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white font-mono uppercase focus:border-brand-500 focus:outline-none">
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-slate-400 mb-1">Harga Beli (Rp)</label>
+                                <input type="number" id="simBuyPrice" placeholder="9800" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white font-mono focus:border-brand-500 focus:outline-none">
+                            </div>
+                            <div>
+                                <label class="block text-slate-400 mb-1">Jumlah (Lot)</label>
+                                <input type="number" id="simLots" placeholder="10" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2 text-white font-mono focus:border-brand-500 focus:outline-none">
+                            </div>
+                        </div>
+                        <button onclick="addStockToWatchlist()" class="w-full py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-lg transition-all shadow-md shadow-brand-600/30">
+                            + Masukkan Ke Portofolio
+                        </button>
+                    </div>
+
+                    <!-- Watchlist Interactive Table -->
+                    <div class="lg:col-span-8 overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-slate-900 text-brand-400 uppercase text-[10px] border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">Saham</th>
+                                    <th class="p-3">Harga Beli</th>
+                                    <th class="p-3">Harga Sekarang</th>
+                                    <th class="p-3">Jumlah</th>
+                                    <th class="p-3">Total Nilai</th>
+                                    <th class="p-3">Profit / Loss</th>
+                                    <th class="p-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="watchlistTableBody" class="divide-y divide-slate-800/60 text-slate-200">
+                                <!-- Dynamic JS Injection -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Latest Investment News Grid -->
+            <div>
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-white flex items-center">
+                        <i class="fa-solid fa-newspaper text-brand-500 mr-2.5"></i> Berita & Analisis Terpopuler
+                    </h2>
+                    <span class="text-xs text-slate-400 font-mono">Total Artikel: <strong id="articleCountDisplay" class="text-brand-400">0</strong></span>
+                </div>
+
+                <div id="newsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Dynamic JavaScript Articles Grid Injection -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 2: PASAR MODAL (IHSG) -->
+        <div id="view-pasar-modal" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 rounded-2xl border border-brand-900/60">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Pasar Saham & Indeks Harga Saham Gabungan (IHSG)</h2>
+                        <p class="text-xs text-slate-400 mt-1">Analisis pergerakan harian, volume perdagangan, dan performa saham teratas BEI.</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 font-mono text-xs">
+                        <span class="px-3 py-1.5 bg-slate-900 text-brand-400 rounded-lg border border-brand-800">Volume: 18.4M Lembar</span>
+                        <span class="px-3 py-1.5 bg-slate-900 text-emerald-400 rounded-lg border border-brand-800">Net Foreign Buy: +Rp 640 M</span>
+                    </div>
+                </div>
+
+                <!-- Stock Screener Quick Filter Table -->
+                <div class="mb-6">
+                    <h3 class="text-sm font-bold text-slate-200 mb-3 flex items-center">
+                        <i class="fa-solid fa-filter text-brand-400 mr-2"></i> Hot Stock Screener Hari Ini
+                    </h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs font-mono">
+                            <thead class="bg-slate-900 text-brand-400 uppercase text-[10px] border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">Kode</th>
+                                    <th class="p-3">Nama Emiten</th>
+                                    <th class="p-3">Harga</th>
+                                    <th class="p-3">Perubahan</th>
+                                    <th class="p-3">PER (x)</th>
+                                    <th class="p-3">PBV (x)</th>
+                                    <th class="p-3">Rekomendasi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800 text-slate-200">
+                                <tr class="hover:bg-slate-900/50">
+                                    <td class="p-3 font-bold text-brand-400">BBCA</td>
+                                    <td class="p-3">Bank Central Asia Tbk</td>
+                                    <td class="p-3 font-bold">10.125</td>
+                                    <td class="p-3 text-emerald-400 font-bold">+1.25%</td>
+                                    <td class="p-3">22.4</td>
+                                    <td class="p-3">4.8</td>
+                                    <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-bold">BUY (11.200)</span></td>
+                                </tr>
+                                <tr class="hover:bg-slate-900/50">
+                                    <td class="p-3 font-bold text-brand-400">BBRI</td>
+                                    <td class="p-3">Bank Rakyat Indonesia Tbk</td>
+                                    <td class="p-3 font-bold">5.350</td>
+                                    <td class="p-3 text-rose-400 font-bold">-0.46%</td>
+                                    <td class="p-3">13.8</td>
+                                    <td class="p-3">2.4</td>
+                                    <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-bold">ACCUMULATE (6.100)</span></td>
+                                </tr>
+                                <tr class="hover:bg-slate-900/50">
+                                    <td class="p-3 font-bold text-brand-400">TLKM</td>
+                                    <td class="p-3">Telkom Indonesia Tbk</td>
+                                    <td class="p-3 font-bold">3.820</td>
+                                    <td class="p-3 text-emerald-400 font-bold">+0.79%</td>
+                                    <td class="p-3">15.2</td>
+                                    <td class="p-3">2.8</td>
+                                    <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-bold">BUY (4.400)</span></td>
+                                </tr>
+                                <tr class="hover:bg-slate-900/50">
+                                    <td class="p-3 font-bold text-brand-400">ASII</td>
+                                    <td class="p-3">Astra International Tbk</td>
+                                    <td class="p-3 font-bold">5.450</td>
+                                    <td class="p-3 text-emerald-400 font-bold">+2.10%</td>
+                                    <td class="p-3">6.9</td>
+                                    <td class="p-3">1.1</td>
+                                    <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800 font-bold">STRONG BUY (6.200)</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="h-72 w-full mb-6">
+                    <canvas id="ihsgDetailedChart"></canvas>
+                </div>
+            </div>
+
+            <div id="categoryNews-pasar-modal" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- VIEW 3: AKSI KORPORASI -->
+        <div id="view-aksi-korporasi" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 rounded-2xl border border-brand-900/60">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Kalender Aksi Korporasi & Dividen BEI</h2>
+                        <p class="text-xs text-slate-400 mt-1">Jadwal pembagian dividen tunai, Right Issue, Stock Split, dan RUPS Emiten.</p>
+                    </div>
+                    <span class="bg-brand-950 text-brand-400 text-xs px-3 py-1.5 rounded-lg border border-brand-800 font-medium">
+                        <i class="fa-solid fa-calendar-days mr-1.5"></i> Musim Dividen Q1
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs font-mono">
+                        <thead class="bg-slate-900 text-brand-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Kode</th>
+                                <th class="p-3">Perusahaan</th>
+                                <th class="p-3">Jenis Aksi</th>
+                                <th class="p-3">Nilai / Rasio</th>
+                                <th class="p-3">Cum Date</th>
+                                <th class="p-3">Payment Date</th>
+                                <th class="p-3">Yield Est.</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800/60 text-slate-200">
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold text-brand-400">ASII</td>
+                                <td class="p-3">Astra International Tbk</td>
+                                <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">Dividen Final</span></td>
+                                <td class="p-3 font-semibold">Rp 425 / saham</td>
+                                <td class="p-3">28 Maret 2026</td>
+                                <td class="p-3">18 April 2026</td>
+                                <td class="p-3 text-emerald-400 font-bold">7.8%</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold text-brand-400">BBCA</td>
+                                <td class="p-3">Bank Central Asia Tbk</td>
+                                <td class="p-3"><span class="bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">Dividen Final</span></td>
+                                <td class="p-3 font-semibold">Rp 270 / saham</td>
+                                <td class="p-3">22 Maret 2026</td>
+                                <td class="p-3">04 April 2026</td>
+                                <td class="p-3 text-emerald-400 font-bold">2.6%</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold text-brand-400">TLKM</td>
+                                <td class="p-3">Telkom Indonesia Tbk</td>
+                                <td class="p-3"><span class="bg-cyan-950 text-cyan-400 px-2 py-0.5 rounded border border-cyan-800">Buyback Saham</span></td>
+                                <td class="p-3 font-semibold">Maks. Rp 3.5 T</td>
+                                <td class="p-3">15 April 2026</td>
+                                <td class="p-3">-</td>
+                                <td class="p-3 text-slate-400">-</td>
+                            </tr>
+                            <tr class="hover:bg-slate-900/50">
+                                <td class="p-3 font-bold text-brand-400">UNVR</td>
+                                <td class="p-3">Unilever Indonesia Tbk</td>
+                                <td class="p-3"><span class="bg-indigo-950 text-indigo-400 px-2 py-0.5 rounded border border-indigo-800">Stock Split</span></td>
+                                <td class="p-3 font-semibold">Rasio 1:5</td>
+                                <td class="p-3">02 Mei 2026</td>
+                                <td class="p-3">10 Mei 2026</td>
+                                <td class="p-3 text-slate-400">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div id="categoryNews-aksi-korporasi" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- VIEW 4: REKSA DANA -->
+        <div id="view-reksa-dana" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 rounded-2xl border border-brand-900/60">
+                <h2 class="text-2xl font-bold text-white mb-2">Pergerakan & Benchmark Reksa Dana</h2>
+                <p class="text-xs text-slate-400 mb-6">Perbandingan return Reksa Dana Pasar Uang, Pendapatan Tetap, Campuran, dan Saham.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+                        <span class="text-xs text-emerald-400 font-bold uppercase font-mono">Pasar Uang</span>
+                        <h3 class="text-lg font-bold text-white mt-1">Sucorinvest Money Market</h3>
+                        <div class="text-2xl font-black text-emerald-400 my-2 font-mono">+6.15% <span class="text-xs text-slate-400 font-normal">/ thn</span></div>
+                        <p class="text-xs text-slate-400">Risiko sangat rendah, cocok untuk dana darurat dan jangka pendek (&lt; 1 thn).</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+                        <span class="text-xs text-brand-400 font-bold uppercase font-mono">Pendapatan Tetap</span>
+                        <h3 class="text-lg font-bold text-white mt-1">Eastspring IDR Fixed Income</h3>
+                        <div class="text-2xl font-black text-brand-400 my-2 font-mono">+8.40% <span class="text-xs text-slate-400 font-normal">/ thn</span></div>
+                        <p class="text-xs text-slate-400">Berbasis Obligasi Pemerintah, cocok untuk alokasi 1-3 tahun.</p>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+                        <span class="text-xs text-cyan-400 font-bold uppercase font-mono">Saham (Equity)</span>
+                        <h3 class="text-lg font-bold text-white mt-1">Schroder Dana Istimewa</h3>
+                        <div class="text-2xl font-black text-cyan-400 my-2 font-mono">+14.20% <span class="text-xs text-slate-400 font-normal">/ thn</span></div>
+                        <p class="text-xs text-slate-400">Potensi imbal hasil tinggi dengan fluktuasi jangka pendek untuk &gt; 5 tahun.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="categoryNews-reksa-dana" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- VIEW 5: OBLIGASI -->
+        <div id="view-obligasi" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 rounded-2xl border border-brand-900/60">
+                <h2 class="text-2xl font-bold text-white mb-2">Surat Berharga Negara (SBN) & Obligasi</h2>
+                <p class="text-xs text-slate-400 mb-6">Informasi SBN Ritel (ORI, SR, SBR), Yield Curve, dan Obligasi Korporasi.</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-white text-base">ORI025-T3 (Tenor 3 Tahun)</h3>
+                            <span class="bg-brand-950 text-brand-400 text-xs px-2.5 py-1 rounded border border-brand-800 font-mono">SBN Ritel</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl font-black text-cyan-400 font-mono">6.25%</span>
+                            <span class="text-xs text-slate-400">p.a Fixed Rate (Kupon Tetap)</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Dijamin 100% oleh Undang-Undang Negara RI. Pembayaran kupon dilakukan setiap bulan secara otomatis.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h3 class="font-bold text-white text-base">Sukuk Ritel SR020 (Syariah)</h3>
+                            <span class="bg-emerald-950 text-emerald-400 text-xs px-2.5 py-1 rounded border border-emerald-800 font-mono">Syariah</span>
+                        </div>
+                        <div class="flex items-baseline space-x-2">
+                            <span class="text-3xl font-black text-emerald-400 font-mono">6.40%</span>
+                            <span class="text-xs text-slate-400">p.a Tradable</span>
+                        </div>
+                        <p class="text-xs text-slate-400 leading-relaxed">
+                            Dapat diperjualbelikan di pasar sekunder antar investor domestik setelah holding period.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="categoryNews-obligasi" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- VIEW 6: ANALISIS & STRATEGI -->
+        <div id="view-analisis-strategi" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 rounded-2xl border border-brand-900/60">
+                <h2 class="text-2xl font-bold text-white mb-2">Analisis & Strategi Investasi Cerdas</h2>
+                <p class="text-xs text-slate-400 mb-6">Edukasi manajemen portofolio, analisis teknikal breakout, dan strategi Dollar Cost Averaging (DCA).</p>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+                        <div class="w-10 h-10 rounded-lg bg-brand-900/60 text-brand-400 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-layer-group text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-base mb-2">Diversifikasi Aset</h3>
+                        <p class="text-xs text-slate-400">
+                            Membagi modal ke Saham (40%), Obligasi (40%), dan Pasar Uang (20%) untuk meminimalkan risiko gejolak pasar.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+                        <div class="w-10 h-10 rounded-lg bg-cyan-900/60 text-cyan-400 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-clock-rotate-left text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-base mb-2">Strategi DCA Routine</h3>
+                        <p class="text-xs text-slate-400">
+                            Investasi rutin berkala setiap bulan tanpa mempedulikan fluktuasi harga pendek untuk merata-ratakan harga beli.
+                        </p>
+                    </div>
+
+                    <div class="bg-slate-950 p-5 rounded-xl border border-slate-800">
+                        <div class="w-10 h-10 rounded-lg bg-emerald-900/60 text-emerald-400 flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-magnifying-glass-chart text-lg"></i>
+                        </div>
+                        <h3 class="font-bold text-white text-base mb-2">Value Investing</h3>
+                        <p class="text-xs text-slate-400">
+                            Mencari saham fundamental bagus dengan PER &lt; 15x dan PBV &lt; 2x yang sedang dihargai murah oleh pasar.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="categoryNews-analisis-strategi" class="grid grid-cols-1 md:grid-cols-3 gap-6"></div>
+        </div>
+
+        <!-- VIEW 7: GLOSARIUM 100+ ISTILAH DENGAN DIAGRAM VISUAL -->
+        <div id="view-glosarium" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-cyan-900/60 relative overflow-hidden">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <span class="bg-cyan-950 text-cyan-400 text-[10px] font-mono px-2.5 py-1 rounded border border-cyan-800 font-bold uppercase">Kamus 100+ Istilah + Diagram Visual All-In-One</span>
+                        <h2 class="text-2xl sm:text-3xl font-black text-white mt-1">Glosarium Investasi 100+ & Diagram Visual</h2>
+                        <p class="text-xs text-slate-400 mt-1">Panduan praktis 100+ istilah pasar modal lengkap dengan ilustrasi visual/diagram untuk Analisis Teknikal, Fundamental, Aksi Korporasi, Saham & SBN.</p>
+                    </div>
+
+                    <div class="w-full md:w-80 relative">
+                        <input type="text" id="glossarySearch" oninput="filterGlossary()" placeholder="Cari dari 100+ istilah (misal: PER, Split, MACD)..." class="w-full bg-slate-900 border border-cyan-900/80 focus:border-cyan-400 text-xs text-white rounded-xl pl-9 pr-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-all">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-cyan-500 text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- Glossary Category Filters -->
+                <div class="flex items-center space-x-2 overflow-x-auto pb-3 mb-4 font-mono text-xs">
+                    <button onclick="filterGlossaryCategory('all')" id="gcat-all" class="glossary-cat-btn bg-cyan-600 text-white px-3.5 py-1.5 rounded-lg font-bold shrink-0 shadow-md">Semua (100+)</button>
+                    <button onclick="filterGlossaryCategory('fundamental')" id="gcat-fundamental" class="glossary-cat-btn bg-slate-900 hover:bg-cyan-950 text-emerald-400 border border-emerald-500/50 font-bold px-3.5 py-1.5 rounded-lg shrink-0"><i class="fa-solid fa-chart-column mr-1"></i> Fundamental (25+)</button>
+                    <button onclick="filterGlossaryCategory('teknikal')" id="gcat-teknikal" class="glossary-cat-btn bg-slate-900 hover:bg-cyan-950 text-amber-400 border border-amber-500/50 font-bold px-3.5 py-1.5 rounded-lg shrink-0"><i class="fa-solid fa-chart-line mr-1"></i> Teknikal (25+)</button>
+                    <button onclick="filterGlossaryCategory('korporasi')" id="gcat-korporasi" class="glossary-cat-btn bg-slate-900 hover:bg-cyan-950 text-purple-400 border border-purple-500/50 font-bold px-3.5 py-1.5 rounded-lg shrink-0"><i class="fa-solid fa-building-flag mr-1"></i> Korporasi (25+)</button>
+                    <button onclick="filterGlossaryCategory('saham')" id="gcat-saham" class="glossary-cat-btn bg-slate-900 hover:bg-cyan-950 text-cyan-400 border border-cyan-500/50 font-bold px-3.5 py-1.5 rounded-lg shrink-0"><i class="fa-solid fa-coins mr-1"></i> Saham & Pasar (25+)</button>
+                </div>
+
+                <div class="text-xs text-slate-400 font-mono mb-4 flex justify-between items-center">
+                    <span>Menampilkan <span id="glossaryCount" class="text-cyan-400 font-bold">0</span> Istilah (Total 100+ Kamus Finansial)</span>
+                    <span class="text-[11px] text-amber-400 flex items-center"><i class="fa-solid fa-circle-info mr-1"></i> Dilengkapi diagram visual ilustratif</span>
+                </div>
+
+                <!-- Glossary Cards Grid -->
+                <div id="glossaryGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Dynamic Injected Glossary Items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW 8: SIMULATOR PORTFOLIO HUB & STRESS TEST -->
+        <div id="view-simulator-hub" class="category-view hidden space-y-8">
+            <div class="glass-panel p-6 sm:p-8 rounded-2xl border border-emerald-900/60">
+                <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6 border-b border-slate-800 pb-6">
+                    <div>
+                        <span class="bg-emerald-950 text-emerald-400 text-xs font-mono px-3 py-1 rounded-full border border-emerald-800 font-bold uppercase">Virtual Capital: Rp 100.000.000</span>
+                        <h2 class="text-3xl font-black text-white mt-2">Interactive Investment Simulator Hub</h2>
+                        <p class="text-xs text-slate-400 mt-1">Rancang strategi investasi, kelola portofolio virtual, dan uji ketahanan aset dalam skenario kejatuhan pasar (Market Stress Test).</p>
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-2 font-mono text-xs">
+                        <button onclick="runScenario('bull')" class="px-3 py-2 bg-emerald-950 hover:bg-emerald-900 text-emerald-400 border border-emerald-800 rounded-lg transition font-bold">
+                            <i class="fa-solid fa-arrow-trend-up mr-1"></i> Scenario Bull (+20%)
+                        </button>
+                        <button onclick="runScenario('bear')" class="px-3 py-2 bg-rose-950 hover:bg-rose-900 text-rose-400 border border-rose-800 rounded-lg transition font-bold">
+                            <i class="fa-solid fa-arrow-trend-down mr-1"></i> Crash Test (-25%)
+                        </button>
+                        <button onclick="resetScenario()" class="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-lg transition">
+                            <i class="fa-solid fa-rotate mr-1"></i> Reset Normal
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Portfolio Analytics Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
+                    <!-- Metrics Cards -->
+                    <div class="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <span class="text-[11px] text-slate-400 uppercase font-mono block">Total Nilai Portofolio</span>
+                            <div id="simHubTotalValue" class="text-2xl font-black text-white font-mono mt-1">Rp 100.000.000</div>
+                            <span id="simHubTotalReturn" class="text-xs text-emerald-400 font-bold font-mono mt-1 block">+0.00%</span>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <span class="text-[11px] text-slate-400 uppercase font-mono block">Unrealized Profit / Loss</span>
+                            <div id="simHubUnrealized" class="text-2xl font-black text-emerald-400 font-mono mt-1">Rp 0</div>
+                            <span class="text-[10px] text-slate-500 block mt-1">Sebelum Potongan Pajak</span>
+                        </div>
+
+                        <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <span class="text-[11px] text-slate-400 uppercase font-mono block">Kas Tersedia (Cash)</span>
+                            <div id="simHubCash" class="text-2xl font-black text-cyan-400 font-mono mt-1">Rp 25.000.000</div>
+                            <span class="text-[10px] text-slate-500 block mt-1">Siap Diinvestasikan</span>
+                        </div>
+                    </div>
+
+                    <!-- Asset Allocation Chart -->
+                    <div class="lg:col-span-4 bg-slate-950 p-4 rounded-xl border border-slate-800 flex flex-col items-center justify-center">
+                        <h4 class="text-xs font-bold text-slate-300 font-mono mb-2">Proporsi Alokasi Aset</h4>
+                        <div class="h-36 w-36 relative">
+                            <canvas id="portfolioPieChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Stock Purchase & Allocation Builder -->
+                <div class="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-4">
+                    <h3 class="font-bold text-white text-sm flex items-center">
+                        <i class="fa-solid fa-cart-plus text-emerald-400 mr-2"></i> Eksekusi Beli Saham Ke Simulator
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 text-xs">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Simbol Saham</label>
+                            <select id="simHubStockSelect" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-white font-mono font-bold focus:border-emerald-500 focus:outline-none">
+                                <option value="BBCA|10125">BBCA - Rp 10.125</option>
+                                <option value="BBRI|5350">BBRI - Rp 5.350</option>
+                                <option value="TLKM|3820">TLKM - Rp 3.820</option>
+                                <option value="ASII|5450">ASII - Rp 5.450</option>
+                                <option value="AMMN|8425">AMMN - Rp 8.425</option>
+                                <option value="GOTO|61">GOTO - Rp 61</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Jumlah Lot (1 Lot = 100 Lembar)</label>
+                            <input type="number" id="simHubLotInput" value="20" min="1" class="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-emerald-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Total Biaya Est.</label>
+                            <input type="text" id="simHubCostPreview" readonly value="Rp 20.250.000" class="w-full bg-slate-900/60 border border-slate-800 rounded-lg p-2.5 text-brand-400 font-mono font-bold">
+                        </div>
+                        <div class="flex items-end">
+                            <button onclick="buyStockInSimulator()" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all shadow-md shadow-emerald-600/30">
+                                <i class="fa-solid fa-check-circle mr-1"></i> Beli Sekarang
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- FOOTER SECTION -->
+    <footer class="bg-slate-950 border-t border-brand-900/60 text-xs text-slate-400 py-10 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div class="space-y-3">
+                    <div class="flex items-center space-x-2">
+                        <i class="fa-solid fa-chart-line text-brand-500 text-xl"></i>
+                        <span class="text-xl font-black text-white tracking-wider">NEXA<span class="text-brand-500">INVEST</span></span>
+                    </div>
+                    <p class="text-slate-400 text-xs leading-relaxed">
+                        Platform portal berita finansial terpadu, edukasi pasar modal, dan simulasi investasi virtual untuk siswa SMK TKJ & publik Indonesia.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Navigasi Utama</h4>
+                    <ul class="space-y-2">
+                        <li><button onclick="switchCategory('pasar-modal')" class="hover:text-brand-400">Pasar & IHSG</button></li>
+                        <li><button onclick="switchCategory('aksi-korporasi')" class="hover:text-brand-400">Jadwal Dividen</button></li>
+                        <li><button onclick="switchCategory('reksa-dana')" class="hover:text-brand-400">Reksa Dana</button></li>
+                        <li><button onclick="switchCategory('glosarium')" class="hover:text-cyan-400 font-semibold">Kamus Finansial (100+)</button></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Fitur Interaktif</h4>
+                    <ul class="space-y-2">
+                        <li><button onclick="openCalcModal()" class="hover:text-brand-400">Kalkulator Bunga Bergulung</button></li>
+                        <li><button onclick="openRiskQuizModal()" class="hover:text-brand-400">Tes Profil Risiko</button></li>
+                        <li><button onclick="switchCategory('simulator-hub')" class="hover:text-emerald-400">Simulator Portofolio</button></li>
+                        <li><button onclick="openBookmarksModal()" class="hover:text-brand-400">Tersimpan</button></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-white mb-3 uppercase tracking-wider text-[11px]">Penafian (Disclaimer)</h4>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        Seluruh data pasar dan simulasi di portal ini disediakan untuk tujuan pendidikan dan informasi semata. Bukan merupakan rekomendasi beli atau jual aset keuangan resmi.
+                    </p>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-900 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500">
+                <p>&copy; 2026 NexaInvest Enterprise v2.6 - SMK TKJ Networks. All rights reserved.</p>
+                <p class="mt-2 sm:mt-0 font-mono"><i class="fa-solid fa-code text-brand-500 mr-1"></i> Single-File Visual Architecture</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL 1: FULL ARTICLE READER MODAL WITH TEXT-TO-SPEECH -->
+    <div id="articleModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 modal-blur overflow-y-auto">
+        <div class="bg-slate-900 border border-brand-800 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            <!-- Modal Header Toolbar -->
+            <div class="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between shrink-0">
+                <div class="flex items-center space-x-2">
+                    <span id="modalCategoryBadge" class="bg-brand-600 text-white text-[10px] font-bold px-2.5 py-0.5 rounded">Pasar Modal</span>
+                    <span id="modalReadTime" class="text-xs text-slate-400 font-mono"><i class="fa-regular fa-clock mr-1"></i> 4 min baca</span>
+                </div>
+                
+                <div class="flex items-center space-x-2">
+                    <button onclick="toggleSpeech()" id="speechBtn" title="Dengarkan Berita (Text to Speech)" class="px-2.5 py-1 bg-slate-900 hover:bg-brand-950 border border-brand-800 text-brand-400 text-xs rounded-lg font-semibold flex items-center space-x-1">
+                        <i class="fa-solid fa-volume-high"></i>
+                        <span id="speechBtnText">Dengarkan</span>
+                    </button>
+
+                    <button onclick="toggleBookmarkCurrentArticle()" id="modalBookmarkBtn" title="Simpan Artikel" class="p-1.5 text-slate-400 hover:text-amber-400 text-sm">
+                        <i class="fa-regular fa-bookmark"></i>
+                    </button>
+
+                    <button onclick="closeArticleModal()" class="p-1.5 text-slate-400 hover:text-white text-base">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Content Body -->
+            <div id="articleModalBody" class="p-6 sm:p-8 overflow-y-auto space-y-4 text-slate-200 text-sm leading-relaxed">
+                <!-- Dynamic Article Body -->
+            </div>
+
+            <!-- Modal Footer Actions -->
+            <div class="bg-slate-950 p-4 border-t border-slate-800 flex items-center justify-between text-xs shrink-0">
+                <div class="flex items-center space-x-2">
+                    <button onclick="shareArticle()" class="text-slate-400 hover:text-brand-400 font-semibold"><i class="fa-solid fa-share-nodes mr-1"></i> Bagikan</button>
+                </div>
+                <button onclick="closeArticleModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg font-bold">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: FINANCIAL CALCULATORS MODAL (COMPOUND INTEREST & DIVIDEND) -->
+    <div id="calcModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 modal-blur overflow-y-auto">
+        <div class="bg-slate-900 border border-brand-800 rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden my-auto">
+            <div class="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between">
+                <h3 class="font-bold text-white text-base flex items-center">
+                    <i class="fa-solid fa-calculator text-brand-400 mr-2"></i> Kalkulator Finansial & Proyeksi Investasi
+                </h3>
+                <button onclick="closeCalcModal()" class="text-slate-400 hover:text-white text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Calculator Tabs -->
+            <div class="flex border-b border-slate-800 text-xs font-bold bg-slate-950">
+                <button onclick="switchCalcTab('compound')" id="calcTab-compound" class="flex-1 py-3 border-b-2 border-brand-500 text-brand-400 bg-brand-950/30">
+                    Bunga Bergulung (DCA)
+                </button>
+                <button onclick="switchCalcTab('dividend')" id="calcTab-dividend" class="flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-white">
+                    Estimasi Dividen Pasif
+                </button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-5 text-xs">
+                <!-- TAB 1: COMPOUND INTEREST -->
+                <div id="calcView-compound" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Modal Awal (Rp)</label>
+                            <input type="number" id="calcInitial" value="10000000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Investasi Rutin Bulanan (DCA)</label>
+                            <input type="number" id="calcMonthly" value="1000000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Estimasi Return Tahunan (%)</label>
+                            <input type="number" id="calcReturnRate" value="12" step="0.5" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-brand-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Jangka Waktu (Tahun)</label>
+                            <input type="number" id="calcYears" value="10" min="1" max="40" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-brand-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="calculateCompoundInterest()" class="w-full py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-lg transition-all shadow-md">
+                        Hitung Proyeksi Kekayaan
+                    </button>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono space-y-2">
+                        <div class="flex justify-between text-slate-300">
+                            <span>Total Setoran Modal:</span>
+                            <span id="calcTotalPrincipal" class="font-bold text-white">Rp 130.000.000</span>
+                        </div>
+                        <div class="flex justify-between text-emerald-400">
+                            <span>Keuntungan Bunga Bergulung:</span>
+                            <span id="calcTotalInterest" class="font-bold">Rp 102.340.000</span>
+                        </div>
+                        <div class="flex justify-between text-lg font-black text-brand-400 border-t border-slate-800 pt-2">
+                            <span>Estimasi Total Hasil:</span>
+                            <span id="calcFinalResult">Rp 232.340.000</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: DIVIDEND CALCULATOR -->
+                <div id="calcView-dividend" class="hidden space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-slate-400 mb-1">Total Nilai Saham (Rp)</label>
+                            <input type="number" id="divTotalValue" value="100000000" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 mb-1">Rata-rata Dividend Yield (%)</label>
+                            <input type="number" id="divYield" value="5.5" step="0.1" class="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:border-cyan-500 focus:outline-none">
+                        </div>
+                    </div>
+
+                    <button onclick="calculateDividendYield()" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-500 text-white font-bold rounded-lg transition-all shadow-md">
+                        Hitung Passive Income
+                    </button>
+
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800 font-mono space-y-2">
+                        <div class="flex justify-between text-slate-300">
+                            <span>Dividen Tahunan (Kotor):</span>
+                            <span id="divAnnual" class="font-bold text-cyan-400">Rp 5.500.000</span>
+                        </div>
+                        <div class="flex justify-between text-emerald-400">
+                            <span>Rata-rata Pasif Income Per Bulan:</span>
+                            <span id="divMonthly" class="font-bold">Rp 458.333 / bln</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: RISK PROFILE QUIZ MODAL -->
+    <div id="riskQuizModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 modal-blur overflow-y-auto">
+        <div class="bg-slate-900 border border-brand-800 rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-base flex items-center">
+                    <i class="fa-solid fa-user-shield text-cyan-400 mr-2"></i> Kuis Profil Risiko & Pengetahuan Investor
+                </h3>
+                <button onclick="closeRiskQuizModal()" class="text-slate-400 hover:text-white text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="quizContent" class="space-y-4 text-xs">
+                <!-- Dynamic Interactive Quiz Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: BOOKMARKS LIST MODAL -->
+    <div id="bookmarksModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-slate-950/80 modal-blur overflow-y-auto">
+        <div class="bg-slate-900 border border-brand-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="font-bold text-white text-base flex items-center">
+                    <i class="fa-solid fa-bookmark text-brand-400 mr-2"></i> Artikel Tersimpan
+                </h3>
+                <button onclick="closeBookmarksModal()" class="text-slate-400 hover:text-white text-sm">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="bookmarksList" class="space-y-3 max-h-80 overflow-y-auto text-xs">
+                <!-- Dynamic JS Injection -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           1. MOTIVATIONAL QUOTES DATASET (10 QUOTES) & 12-SECOND AUTO-ROTATE CONTROLLER
+           ========================================================================== */
+        const MOTIVATIONAL_QUOTES = [
+            { quote: "Cancing-Cacing Naga-Naga", author: "Andri Hakim" },
+            { quote: "Pasar saham adalah instrumen yang memindahkan uang dari orang yang tidak sabar kepada orang yang sabar. Konsistensi dan disiplin adalah kunci sukses utama.", author: "Warren Buffett (Investor Legendaris Dunia)" },
+            { quote: "Jangan takut akan penurunan harga sementara. Penurunan pasar adalah kesempatan emas bagi investor disiplin untuk membeli perusahaan berkualitas tinggi dengan harga diskon.", author: "Peter Lynch (Pengelola Fund Magellan Terkemuka)" },
+            { quote: "Investasi terbaik yang bisa Anda lakukan adalah investasi pada diri sendiri dan ilmu pengetahuan Anda. Semakin banyak Anda belajar, semakin banyak yang Anda hasilkan.", author: "Benjamin Graham (Bapak Value Investing)" },
+            { quote: "Kegagalan terbesar dalam investasi bukanlah saat portofolio merah, melainkan saat Anda berhenti belajar dan menyerah akibat panik emosional.", author: "NexaInvest Coaching Spirit" },
+            { quote: "Bukan tentang seberapa banyak modal awal yang Anda miliki, melainkan seberapa konsisten Anda melakukan DCA (Dollar Cost Averaging) dan menjaga disiplin portofolio.", author: "Mentalitas Investor SMK TKJ" },
+            { quote: "Badai di pasar modal selalu bersifat sementara. Perusahaan hebat dengan fundamental kuat selalu kembali mencetak rekor tertinggi baru.", author: "Charlie Munger (Partner Utama Berkshire Hathaway)" },
+            { quote: "Pasar keuangan tidak peduli dengan perasaan Anda. Fokuslah pada riset objektif, manajemen risiko, dan rencana investasi jangka panjang.", author: "Howard Marks (Pendiri Oaktree Capital)" },
+            { quote: "Kekayaan finansial yang sesungguhnya dibangun dari akumulasi aset produktif dan imbal hasil bunga bergulung (compound interest) dari waktu ke waktu.", author: "Morgan Housel (Penulis The Psychology of Money)" },
+            { quote: "Disiplin mengalahkan kecerdasan di pasar modal. Rencana trading yang konsisten jauh lebih berharga daripada prediksi harian yang spekulatif.", author: "Ray Dalio (Pendiri Bridgewater Associates)" },
+            { quote: "Risiko datang dari ketidaktahuan Anda tentang apa yang sedang Anda beli. Selalu pelajari laporan keuangan sebelum menanamkan modal.", author: "John C. Bogle (Pendiri Vanguard Group)" }
+        ];
+
+        let currentQuoteIndex = 0;
+        let quoteInterval = null;
+        let isQuoteAutoPlaying = true;
+
+        function updateQuoteUI() {
+            const q = MOTIVATIONAL_QUOTES[currentQuoteIndex];
+            const qElem = document.getElementById('motivationalQuote');
+            const aElem = document.getElementById('quoteAuthor');
+            const indElem = document.getElementById('quoteIndexIndicator');
+            const barElem = document.getElementById('quoteProgressBar');
+            
+            if (qElem && aElem) {
+                qElem.style.opacity = '0';
+                aElem.style.opacity = '0';
+                
+                setTimeout(() => {
+                    qElem.innerText = `"${q.quote}"`;
+                    aElem.innerText = `— ${q.author}`;
+                    if (indElem) indElem.innerText = `${currentQuoteIndex + 1} / ${MOTIVATIONAL_QUOTES.length}`;
+                    
+                    qElem.style.opacity = '1';
+                    aElem.style.opacity = '1';
+                }, 150);
+            }
+
+            // Reset Animation Progress Bar (12s)
+            if (barElem) {
+                barElem.classList.remove('quote-progress');
+                void barElem.offsetWidth; // Trigger Reflow
+                if (isQuoteAutoPlaying) {
+                    barElem.classList.add('quote-progress');
+                }
+            }
+        }
+
+        function nextQuote() {
+            currentQuoteIndex = (currentQuoteIndex + 1) % MOTIVATIONAL_QUOTES.length;
+            updateQuoteUI();
+            resetQuoteTimer();
+        }
+
+        function prevQuote() {
+            currentQuoteIndex = (currentQuoteIndex - 1 + MOTIVATIONAL_QUOTES.length) % MOTIVATIONAL_QUOTES.length;
+            updateQuoteUI();
+            resetQuoteTimer();
+        }
+
+        function startQuoteTimer() {
+            if (quoteInterval) clearInterval(quoteInterval);
+            quoteInterval = setInterval(() => {
+                if (isQuoteAutoPlaying) {
+                    currentQuoteIndex = (currentQuoteIndex + 1) % MOTIVATIONAL_QUOTES.length;
+                    updateQuoteUI();
+                }
+            }, 12000); // Rotates every 12 seconds
+        }
+
+        function resetQuoteTimer() {
+            if (isQuoteAutoPlaying) {
+                startQuoteTimer();
+            }
+        }
+
+        function toggleQuoteAutoPlay() {
+            isQuoteAutoPlaying = !isQuoteAutoPlaying;
+            const btn = document.getElementById('quotePauseBtn');
+            const bar = document.getElementById('quoteProgressBar');
+            
+            if (btn) {
+                if (isQuoteAutoPlaying) {
+                    btn.innerHTML = `<i class="fa-solid fa-pause text-xs mr-1"></i> Auto`;
+                    btn.classList.replace('text-slate-400', 'text-amber-300');
+                    if (bar) bar.classList.add('quote-progress');
+                    startQuoteTimer();
+                    showToast("Auto-slide motivasi (12s) diaktifkan.", "success");
+                } else {
+                    btn.innerHTML = `<i class="fa-solid fa-play text-xs mr-1"></i> Jeda`;
+                    btn.classList.replace('text-amber-300', 'text-slate-400');
+                    if (bar) bar.classList.remove('quote-progress');
+                    if (quoteInterval) clearInterval(quoteInterval);
+                    showToast("Auto-slide motivasi dijeda.", "info");
+                }
+            }
+        }
+
+        /* ==========================================================================
+           2. EXPANDED GLOSSARY DATASET (100+ TERMS) WITH VISUAL SVG MINI-DIAGRAMS
+           ========================================================================== */
+        const GLOSSARY_100_TERMS = [
+            // --- FUNDAMENTAL (25 items) ---
+            { term: "PER (Price to Earnings Ratio)", cat: "fundamental", desc: "Rasio perbandingan harga saham dengan laba per saham (EPS).", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="20" width="75" height="35" fill="#1e3a8a" rx="4"/><text x="52" y="37" fill="#fff" font-size="8" text-anchor="middle">Harga Saham</text><text x="100" y="42" fill="#10b981" font-size="14" text-anchor="middle">÷</text><rect x="110" y="20" width="75" height="35" fill="#064e3b" rx="4"/><text x="147" y="37" fill="#fff" font-size="8" text-anchor="middle">EPS (Laba)</text><text x="100" y="78" fill="#f59e0b" font-size="10" text-anchor="middle" font-weight="bold">PER = 10x (Balik Modal 10 Thn)</text></svg>` },
+            { term: "PBV (Price to Book Value)", cat: "fundamental", desc: "Perbandingan harga saham dengan nilai buku ekuitas per lembar.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="20" width="70" height="50" fill="#1e293b" stroke="#38bdf8" rx="3"/><text x="50" y="45" fill="#38bdf8" font-size="8" text-anchor="middle">Harga Pasar</text><text x="100" y="50" fill="#38bdf8" font-size="12" text-anchor="middle">VS</text><rect x="115" y="20" width="70" height="50" fill="#1e293b" stroke="#a855f7" rx="3"/><text x="150" y="45" fill="#a855f7" font-size="8" text-anchor="middle">Nilai Buku</text><text x="100" y="88" fill="#10b981" font-size="9" text-anchor="middle">PBV = 2.0x</text></svg>` },
+            { term: "ROE (Return on Equity)", cat: "fundamental", desc: "Tingkat pengembalian laba bersih atas modal ekuitas pemegang saham.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 80 A 60 60 0 0 1 180 80" fill="none" stroke="#334155" stroke-width="12" stroke-linecap="round"/><path d="M 20 80 A 60 60 0 0 1 150 35" fill="none" stroke="#10b981" stroke-width="12" stroke-linecap="round"/><text x="100" y="65" fill="#10b981" font-size="16" text-anchor="middle" font-weight="bold">22%</text><text x="100" y="82" fill="#94a3b8" font-size="8" text-anchor="middle">ROE Efisien</text></svg>` },
+            { term: "Dividend Yield", cat: "fundamental", desc: "Persentase dividen tunai tahunan dibagi harga beli saham saat ini.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="30" width="60" height="35" fill="#1e3a8a" rx="3"/><text x="45" y="52" fill="#fff" font-size="8" text-anchor="middle">Laba Bersih</text><path d="M 80 47 L 105 30" stroke="#f59e0b" stroke-width="2"/><rect x="110" y="15" width="80" height="50" fill="#064e3b" stroke="#10b981" rx="3"/><text x="150" y="45" fill="#34d399" font-size="9" text-anchor="middle" font-weight="bold">Dividen 7%</text></svg>` },
+            { term: "EPS (Earning Per Share)", cat: "fundamental", desc: "Besaran laba bersih perusahaan yang diatribusikan per 1 lembar saham.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="20" width="170" height="25" fill="#0f172a" stroke="#38bdf8" rx="4"/><text x="100" y="36" fill="#38bdf8" font-size="9" text-anchor="middle">Total Laba Bersih</text><text x="100" y="60" fill="#cbd5e1" font-size="8" text-anchor="middle">÷ Jumlah Saham Beredar</text><text x="100" y="82" fill="#10b981" font-size="10" text-anchor="middle">= EPS (Laba/Lembar)</text></svg>` },
+            { term: "DER (Debt to Equity Ratio)", cat: "fundamental", desc: "Rasio perbandingan total hutang terhadap modal bersih perusahaan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="100" y1="20" x2="100" y2="70" stroke="#475569" stroke-width="3"/><line x1="30" y1="35" x2="170" y2="35" stroke="#f59e0b" stroke-width="2"/><circle cx="30" cy="50" r="16" fill="#991b1b"/><text x="30" y="53" fill="#fff" font-size="7" text-anchor="middle">Hutang</text><circle cx="170" cy="50" r="20" fill="#065f46"/><text x="170" y="53" fill="#fff" font-size="7" text-anchor="middle">Modal</text></svg>` },
+            { term: "Market Capitalization", cat: "fundamental", desc: "Nilai total keseluruhan harga pasar dari seluruh saham emiten.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><polygon points="100,15 135,40 65,40" fill="#3b82f6"/><text x="100" y="32" fill="#fff" font-size="7" text-anchor="middle">Big Cap</text><polygon points="65,42 135,42 155,70 45,70" fill="#0ea5e9"/><text x="100" y="58" fill="#fff" font-size="7" text-anchor="middle">Mid Cap</text></svg>` },
+            { term: "NPM (Net Profit Margin)", cat: "fundamental", desc: "Persentase laba bersih dari total pendapatan penjualan perusahaan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="30" width="160" height="20" fill="#1e293b" rx="3"/><rect x="20" y="30" width="90" height="20" fill="#10b981" rx="3"/><text x="100" y="44" fill="#fff" font-size="8" text-anchor="middle" font-weight="bold">NPM = 25% Pendapatan Jadi Laba</text></svg>` },
+            { term: "ROA (Return on Assets)", cat: "fundamental", desc: "Kemampuan perusahaan menghasilkan laba dari total seluruh asetnya.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><circle cx="100" cy="50" r="35" fill="none" stroke="#1e3a8a" stroke-width="10"/><circle cx="100" cy="50" r="35" fill="none" stroke="#38bdf8" stroke-width="10" stroke-dasharray="140 220"/><text x="100" y="53" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">ROA</text></svg>` },
+            { term: "Book Value Per Share (BVPS)", cat: "fundamental", desc: "Nilai aset bersih perusahaan dibagi dengan jumlah total saham beredar.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="25" width="160" height="40" fill="#065f46" rx="4"/><text x="100" y="42" fill="#fff" font-size="9" text-anchor="middle">Total Ekuitas Bersih</text><text x="100" y="58" fill="#34d399" font-size="8" text-anchor="middle">÷ Jumlah Saham = BVPS</text></svg>` },
+            { term: "Free Cash Flow (FCF)", cat: "fundamental", desc: "Arus kas bebas yang tersisa setelah dikurangi belanja modal operasional.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 70 L 60 40 L 100 55 L 150 20 L 180 30" fill="none" stroke="#10b981" stroke-width="3"/><text x="100" y="85" fill="#10b981" font-size="9" text-anchor="middle">Kas Bebas Untuk Dividen/Ekspansi</text></svg>` },
+            { term: "Current Ratio", cat: "fundamental", desc: "Rasio likuiditas mengukur kemampuan membayar kewajiban jangka pendek.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="25" width="100" height="30" fill="#1e3a8a" rx="3"/><text x="70" y="43" fill="#fff" font-size="8" text-anchor="middle">Aset Lancar</text><rect x="20" y="60" width="70" height="25" fill="#991b1b" rx="3"/><text x="55" y="77" fill="#fff" font-size="8" text-anchor="middle">Hutang Lancar</text></svg>` },
+            { term: "Quick Ratio", cat: "fundamental", desc: "Rasio likuiditas ketat tanpa memperhitungkan persediaan barang.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><circle cx="60" cy="50" r="30" fill="#0284c7"/><text x="60" y="53" fill="#fff" font-size="9" text-anchor="middle">Kas + Piutang</text><text x="140" y="55" fill="#f59e0b" font-size="12" text-anchor="middle">> 1.0x Aman</text></svg>` },
+            { term: "EBITDA", cat: "fundamental", desc: "Laba sebelum bunga, pajak, depresiasi, dan amortisasi operasional.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="35" width="160" height="30" fill="#1e293b" stroke="#38bdf8" rx="4"/><text x="100" y="54" fill="#38bdf8" font-size="9" text-anchor="middle">Kinerja Inti Tanpa Beban Non-Kas</text></svg>` },
+            { term: "CAGR", cat: "fundamental", desc: "Tingkat pertumbuhan majemuk tahunan investasi dari waktu ke waktu.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 80 Q 100 60 180 20" fill="none" stroke="#10b981" stroke-width="3"/><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Pertumbuhan Eksponensial</text></svg>` },
+            { term: "Dividend Payout Ratio", cat: "fundamental", desc: "Persentase laba bersih yang dibagikan sebagai dividen kepada investor.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><circle cx="100" cy="50" r="35" fill="none" stroke="#334155" stroke-width="10"/><circle cx="100" cy="50" r="35" fill="none" stroke="#f59e0b" stroke-width="10" stroke-dasharray="100 220"/><text x="100" y="53" fill="#fff" font-size="9" text-anchor="middle">DPR 50%</text></svg>` },
+            { term: "Price to Sales Ratio (PSR)", cat: "fundamental", desc: "Perbandingan harga saham dengan total pendapatan penjualan per saham.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="30" width="75" height="35" fill="#1e3a8a" rx="3"/><text x="57" y="50" fill="#fff" font-size="8" text-anchor="middle">Market Cap</text><text x="100" y="50" fill="#38bdf8" font-size="12" text-anchor="middle">÷</text><rect x="115" y="30" width="75" height="35" fill="#064e3b" rx="3"/><text x="152" y="50" fill="#fff" font-size="8" text-anchor="middle">Penjualan</text></svg>` },
+            { term: "Enterprise Value (EV)", cat: "fundamental", desc: "Nilai total perusahaan memperhitungkan kapitalisasi dan total hutang bersih.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="45" fill="#38bdf8" font-size="10" text-anchor="middle">Market Cap + Total Hutang - Kas</text><text x="100" y="70" fill="#10b981" font-size="9" text-anchor="middle">Nilai Akuisisi Riil Perusahaan</text></svg>` },
+            { term: "Operating Margin", cat: "fundamental", desc: "Persentase laba operasional dari total pendapatan kotor perusahaan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="35" width="160" height="25" fill="#0f172a" stroke="#10b981" rx="4"/><text x="100" y="52" fill="#34d399" font-size="9" text-anchor="middle">Efisiensi Operasional Inti (18%)</text></svg>` },
+            { term: "Inventory Turnover", cat: "fundamental", desc: "Berapa kali persediaan barang terjual dan tergantikan dalam satu periode.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 30 50 Q 75 20 120 50 T 180 50" fill="none" stroke="#f59e0b" stroke-width="3"/><text x="100" y="80" fill="#fff" font-size="8" text-anchor="middle">Kecepatan Putaran Barang Gudang</text></svg>` },
+            { term: "Asset Turnover", cat: "fundamental", desc: "Seberapa efisien aset perusahaan menghasilkan pendapatan penjualan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><circle cx="100" cy="50" r="30" fill="none" stroke="#a855f7" stroke-width="8"/><text x="100" y="53" fill="#fff" font-size="9" text-anchor="middle">Utilisasi Aset</text></svg>` },
+            { term: "Interest Coverage Ratio", cat: "fundamental", desc: "Kemampuan perusahaan membayar beban bunga hutang dari laba operasional.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="30" width="160" height="30" fill="#064e3b" rx="4"/><text x="100" y="49" fill="#34d399" font-size="9" text-anchor="middle">Laba Operasional > 5x Beban Bunga</text></svg>` },
+            { term: "Gross Profit Margin", cat: "fundamental", desc: "Persentase laba kotor setelah dikurangi harga pokok penjualan (HPP).", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="20" y="35" width="130" height="20" fill="#3b82f6" rx="3"/><text x="100" y="49" fill="#fff" font-size="8" text-anchor="middle">Margin Kotor 40%</text></svg>` },
+            { term: "Piotroski F-Score", cat: "fundamental", desc: "Sistem skoring 9 poin untuk menilai kekuatan fundamental keuangan emiten.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="45" fill="#10b981" font-size="14" text-anchor="middle" font-weight="bold">Score: 8 / 9 (Strong)</text><text x="100" y="70" fill="#94a3b8" font-size="8" text-anchor="middle">Kesehatan Finansial Prima</text></svg>` },
+            { term: "Altman Z-Score", cat: "fundamental", desc: "Model prediksi kebangkrutan perusahaan berbasis rumus multivariat.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="50" x2="180" y2="50" stroke="#f43f5e" stroke-width="4"/><text x="100" y="35" fill="#10b981" font-size="9" text-anchor="middle" font-weight="bold">Z > 2.9 (Aman dari Bangkrut)</text></svg>` },
+
+            // --- TEKNIKAL (25 items) ---
+            { term: "Support Level", cat: "teknikal", desc: "Area harga bawah di mana tekanan beli cukup kuat menahan kejatuhan harga.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 60 Q 60 20 100 60 T 180 60" fill="none" stroke="#38bdf8" stroke-width="2"/><line x1="20" y1="75" x2="180" y2="75" stroke="#10b981" stroke-width="2" stroke-dasharray="4"/><text x="100" y="90" fill="#10b981" font-size="8" text-anchor="middle">Garis Pantul Support Bawah</text></svg>` },
+            { term: "Resistance Level", cat: "teknikal", desc: "Area batas atas di mana tekanan jual menahan kenaikan harga lebih lanjut.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="20" x2="180" y2="20" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4"/><path d="M 20 80 Q 70 30 120 70 T 180 30" fill="none" stroke="#38bdf8" stroke-width="2"/><text x="100" y="12" fill="#f43f5e" font-size="8" text-anchor="middle">Garis Hambatan Resistance</text></svg>` },
+            { term: "Moving Average (MA)", cat: "teknikal", desc: "Garis pergerakan rata-rata harga saham dalam periode waktu tertentu.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 70 Q 90 20 180 40" fill="none" stroke="#f59e0b" stroke-width="3"/><path d="M 20 80 Q 90 40 180 50" fill="none" stroke="#38bdf8" stroke-width="2" stroke-dasharray="3"/><text x="100" y="90" fill="#f59e0b" font-size="8" text-anchor="middle">MA-20 & MA-50 Trend Penunjuk Arah</text></svg>` },
+            { term: "RSI (Relative Strength Index)", cat: "teknikal", desc: "Indikator momentum mengukur kondisi jenuh beli (overbought) atau jual (oversold).", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="25" x2="180" y2="25" stroke="#f43f5e" stroke-dasharray="2"/><line x1="20" y1="75" x2="180" y2="75" stroke="#10b981" stroke-dasharray="2"/><path d="M 20 60 Q 60 20 100 50 T 180 30" fill="none" stroke="#a855f7" stroke-width="2"/><text x="100" y="93" fill="#a855f7" font-size="8" text-anchor="middle">RSI 0 - 100 (Overbought > 70)</text></svg>` },
+            { term: "MACD", cat: "teknikal", desc: "Indikator trend mengikuti pergerakan konvergensi dan divergensi garis EMA.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 60 Q 90 20 180 50" fill="none" stroke="#38bdf8" stroke-width="2"/><path d="M 20 50 Q 90 40 180 60" fill="none" stroke="#f43f5e" stroke-width="2"/><text x="100" y="85" fill="#38bdf8" font-size="8" text-anchor="middle">Crossover MACD Signal Line</text></svg>` },
+            { term: "Candlestick Pattern", cat: "teknikal", desc: "Grafik batang lilin merepresentasikan pergerakan harga Open, High, Low, Close.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="50" y1="15" x2="50" y2="85" stroke="#10b981" stroke-width="2"/><rect x="40" y="30" width="20" height="40" fill="#10b981" rx="2"/><line x1="140" y1="20" x2="140" y2="80" stroke="#f43f5e" stroke-width="2"/><rect x="130" y="35" width="20" height="35" fill="#f43f5e" rx="2"/></svg>` },
+            { term: "Bollinger Bands", cat: "teknikal", desc: "Indikator volatilitas harga dibatasi oleh pita atas dan bawah berbasis deviasi.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 20 Q 100 5 180 20" fill="none" stroke="#64748b" stroke-width="2"/><path d="M 20 80 Q 100 95 180 80" fill="none" stroke="#64748b" stroke-width="2"/><path d="M 20 50 Q 100 40 180 50" fill="none" stroke="#38bdf8" stroke-width="2"/></svg>` },
+            { term: "Volume Analysis", cat: "teknikal", desc: "Jumlah lembar saham yang ditransaksikan dalam satuan waktu tertentu.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="25" y="40" width="12" height="50" fill="#10b981"/><rect x="45" y="20" width="12" height="70" fill="#10b981"/><rect x="65" y="60" width="12" height="30" fill="#f43f5e"/><rect x="85" y="10" width="12" height="80" fill="#10b981"/><text x="100" y="93" fill="#94a3b8" font-size="8" text-anchor="middle">Lonjakan Volume Konfirmasi Trend</text></svg>` },
+            { term: "Golden Cross", cat: "teknikal", desc: "Persimpangan naik MA pendek melintasi MA panjang sebagai sinyal kuat Buy.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 70 L 180 20" stroke="#38bdf8" stroke-width="2"/><path d="M 20 40 L 180 60" stroke="#f59e0b" stroke-width="2"/><circle cx="100" cy="45" r="6" fill="#10b981"/><text x="100" y="85" fill="#10b981" font-size="8" text-anchor="middle">Golden Cross Bullish</text></svg>` },
+            { term: "Death Cross", cat: "teknikal", desc: "Persimpangan turun MA pendek melintasi MA panjang sebagai sinyal Bearish.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 30 L 180 70" stroke="#f43f5e" stroke-width="2"/><path d="M 20 60 L 180 40" stroke="#f59e0b" stroke-width="2"/><circle cx="100" cy="50" r="6" fill="#f43f5e"/><text x="100" y="85" fill="#f43f5e" font-size="8" text-anchor="middle">Death Cross Bearish</text></svg>` },
+            { term: "Fibonacci Retracement", cat: "teknikal", desc: "Level pembalikan arah harga berbasis deret matematika rasio Fibonacci.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="20" x2="180" y2="20" stroke="#3b82f6"/><line x1="20" y1="45" x2="180" y2="45" stroke="#10b981"/><line x1="20" y1="70" x2="180" y2="70" stroke="#f59e0b"/><text x="100" y="90" fill="#38bdf8" font-size="8" text-anchor="middle">Level 38.2%, 50%, 61.8% Pantulan</text></svg>` },
+            { term: "Stochastic Oscillator", cat: "teknikal", desc: "Indikator pembanding harga penutupan dengan rentang harga periode tertentu.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 70 Q 90 20 180 50" fill="none" stroke="#a855f7" stroke-width="2"/><text x="100" y="85" fill="#a855f7" font-size="8" text-anchor="middle">%K dan %D Garis Crossover</text></svg>` },
+            { term: "Head and Shoulders", cat: "teknikal", desc: "Pola grafik pembalikan trend dari Bullish naik menjadi Bearish turun.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 60 L 50 30 L 80 60 L 100 15 L 120 60 L 150 35 L 180 75" fill="none" stroke="#f43f5e" stroke-width="2"/><text x="100" y="90" fill="#f43f5e" font-size="8" text-anchor="middle">Pola Kepala & Bahu Pembalikan</text></svg>` },
+            { term: "Double Bottom", cat: "teknikal", desc: "Pola grafik berbentuk huruf W mengindikasikan pembalikan naik bullish.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 30 L 60 75 L 100 40 L 140 75 L 180 25" fill="none" stroke="#10b981" stroke-width="2"/><text x="100" y="90" fill="#10b981" font-size="8" text-anchor="middle">Pola Huruf W (Double Bottom)</text></svg>` },
+            { term: "Cup and Handle", cat: "teknikal", desc: "Pola lanjutan trend naik berbentuk cangkir berpegangan kopi.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 30 Q 75 80 120 30 L 130 50 L 150 25" fill="none" stroke="#38bdf8" stroke-width="2"/><text x="100" y="85" fill="#38bdf8" font-size="8" text-anchor="middle">Pola Cangkir & Pegangan (Bullish)</text></svg>` },
+            { term: "Ascending Triangle", cat: "teknikal", desc: "Pola segitiga menaik dengan garis atas mendatar dan bawah menanjak.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="25" x2="180" y2="25" stroke="#f59e0b"/><path d="M 20 75 L 180 25" stroke="#38bdf8" stroke-width="2"/><text x="100" y="90" fill="#10b981" font-size="8" text-anchor="middle">Breakout Ke Atas Menembus Resistance</text></svg>` },
+            { term: "Descending Triangle", cat: "teknikal", desc: "Pola segitiga menurun dengan garis bawah mendatar dan atas menurun.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="75" x2="180" y2="75" stroke="#f43f5e"/><path d="M 20 25 L 180 75" stroke="#a855f7" stroke-width="2"/><text x="100" y="90" fill="#f43f5e" font-size="8" text-anchor="middle">Breakdown Ke Bawah Support</text></svg>` },
+            { term: "Average True Range (ATR)", cat: "teknikal", desc: "Indikator pengukur tingkat volatilitas pergerakan harga pasar.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 50 Q 60 15 100 65 T 180 40" fill="none" stroke="#f59e0b" stroke-width="2"/><text x="100" y="85" fill="#fff" font-size="8" text-anchor="middle">Rentang Fluktuasi Volatilitas</text></svg>` },
+            { term: "Ichimoku Cloud", cat: "teknikal", desc: "Indikator komprehensif menampilkan area awan support dan resistance dinamis.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><polygon points="30,40 100,20 170,60 100,80" fill="#065f46" opacity="0.5"/><text x="100" y="55" fill="#34d399" font-size="8" text-anchor="middle">Kumo Awan Ichimoku</text></svg>` },
+            { term: "Parabolic SAR", cat: "teknikal", desc: "Indikator titik-titik kurva penunjuk arah pembalikan trend harga.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 70 Q 100 20 180 60" fill="none" stroke="#38bdf8" stroke-width="1"/><circle cx="40" cy="62" r="3" fill="#10b981"/><circle cx="70" cy="45" r="3" fill="#10b981"/><circle cx="100" cy="30" r="3" fill="#10b981"/><text x="100" y="90" fill="#10b981" font-size="8" text-anchor="middle">Titik SAR Stop & Reverse</text></svg>` },
+            { term: "Commodity Channel Index (CCI)", cat: "teknikal", desc: "Indikator pengukur deviasi harga dari rata-rata statistik periodenya.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 50 Q 90 10 180 70" fill="none" stroke="#a855f7" stroke-width="2"/><text x="100" y="90" fill="#a855f7" font-size="8" text-anchor="middle">Indikator Siklus Komoditas</text></svg>` },
+            { term: "On-Balance Volume (OBV)", cat: "teknikal", desc: "Indikator akumulasi volume menggabungkan aliran volume naik dan turun.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 80 Q 90 40 180 20" fill="none" stroke="#10b981" stroke-width="3"/><text x="100" y="50" fill="#10b981" font-size="9" text-anchor="middle">Akumulasi Volume Institusi</text></svg>` },
+            { term: "Money Flow Index (MFI)", cat: "teknikal", desc: "Indikator RSI yang memperhitungkan bobot volume transaksi pasar.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 60 Q 90 20 180 50" fill="none" stroke="#f59e0b" stroke-width="2"/><text x="100" y="85" fill="#f59e0b" font-size="8" text-anchor="middle">Volume Weighted RSI</text></svg>` },
+            { term: "Pivot Point", cat: "teknikal", desc: "Level acuan support dan resistance harian berdasarkan harga kemarin.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="20" y1="30" x2="180" y2="30" stroke="#f43f5e"/><line x1="20" y1="50" x2="180" y2="50" stroke="#f59e0b"/><line x1="20" y1="70" x2="180" y2="70" stroke="#10b981"/><text x="100" y="20" fill="#f43f5e" font-size="7" text-anchor="middle">Resistance 1</text><text x="100" y="53" fill="#fff" font-size="8" text-anchor="middle">Pivot Point Utama</text></svg>` },
+            { term: "Elliott Wave Theory", cat: "teknikal", desc: "Teori gelombang psikologi pasar terdiri dari 5 gelombang naik dan 3 turun.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 10 80 L 40 40 L 60 60 L 100 20 L 120 45 L 160 10 L 190 70" fill="none" stroke="#38bdf8" stroke-width="2"/><text x="100" y="90" fill="#38bdf8" font-size="8" text-anchor="middle">Teori 5 Gelombang Impuls & 3 Koreksi</text></svg>` },
+
+            // --- KORPORASI (25 items) ---
+            { term: "Stock Split", cat: "korporasi", desc: "Pecahan nilai nominal saham agar harga lebih terjangkau ritel.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="25" width="60" height="50" fill="#1e3a8a" rx="4"/><text x="45" y="55" fill="#fff" font-size="9" text-anchor="middle">1 @ Rp 10k</text><path d="M 85 50 L 110 50" stroke="#f59e0b" stroke-width="2"/><rect x="120" y="15" width="65" height="30" fill="#065f46" rx="3"/><text x="152" y="34" fill="#34d399" font-size="7" text-anchor="middle">1 @ Rp 5k</text><rect x="120" y="55" width="65" height="30" fill="#065f46" rx="3"/><text x="152" y="74" fill="#34d399" font-size="7" text-anchor="middle">1 @ Rp 5k</text></svg>` },
+            { term: "Reverse Stock Split", cat: "korporasi", desc: "Penggabungan lembar saham untuk menaikkan harga nominal persatuan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="15" width="65" height="30" fill="#991b1b" rx="3"/><text x="47" y="34" fill="#fff" font-size="7" text-anchor="middle">2 @ Rp 500</text><path d="M 85 50 L 110 50" stroke="#f59e0b" stroke-width="2"/><rect x="120" y="25" width="65" height="50" fill="#1e3a8a" rx="4"/><text x="152" y="55" fill="#fff" font-size="8" text-anchor="middle">1 @ Rp 1.000</text></svg>` },
+            { term: "Right Issue (HMETD)", cat: "korporasi", desc: "Penawaran umum terbatas hak memesan efek terlebih dahulu bagi pemegang saham lama.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="25" width="65" height="50" fill="#1e293b" stroke="#38bdf8" rx="4"/><text x="47" y="55" fill="#38bdf8" font-size="8" text-anchor="middle">Saham Lama</text><path d="M 85 50 L 110 50" stroke="#a855f7" stroke-width="2"/><rect x="115" y="25" width="70" height="50" fill="#581c87" stroke="#c084fc" rx="4"/><text x="150" y="55" fill="#fff" font-size="8" text-anchor="middle">Right / Diskon</text></svg>` },
+            { term: "Timeline Cum/Ex Date Dividen", cat: "korporasi", desc: "Jadwal penting batas kepemilikan dan hak pencairan dividen tunai.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><line x1="15" y1="50" x2="185" y2="50" stroke="#475569" stroke-width="3"/><circle cx="45" cy="50" r="6" fill="#10b981"/><text x="45" y="35" fill="#10b981" font-size="7" text-anchor="middle">Cum Date</text><circle cx="135" cy="50" r="6" fill="#f43f5e"/><text x="135" y="35" fill="#f43f5e" font-size="7" text-anchor="middle">Ex Date</text></svg>` },
+            { term: "Share Buyback", cat: "korporasi", desc: "Pembelian kembali saham beredar di pasar oleh perusahaan penerbit.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="25" width="70" height="50" fill="#1e3a8a" rx="4"/><text x="50" y="55" fill="#fff" font-size="8" text-anchor="middle">Pasar Publik</text><path d="M 90 50 L 120 50" stroke="#34d399" stroke-width="2" stroke-dasharray="3"/><rect x="125" y="25" width="60" height="50" fill="#064e3b" rx="4"/><text x="155" y="55" fill="#34d399" font-size="8" text-anchor="middle">Buyback</text></svg>` },
+            { term: "RUPS (Rapat Umum Pemegang Saham)", cat: "korporasi", desc: "Forum tertinggi pengambilan keputusan strategis korporasi emiten.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><circle cx="100" cy="50" r="30" fill="#1e293b" stroke="#38bdf8" stroke-width="2"/><text x="100" y="54" fill="#fff" font-size="9" text-anchor="middle">Voting RUPS</text></svg>` },
+            { term: "IPO (Initial Public Offering)", cat: "korporasi", desc: "Penawaran umum saham perdana perusahaan kepada publik di bursa efek.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="30" y="30" width="140" height="40" fill="#1e3a8a" stroke="#10b981" rx="4"/><text x="100" y="55" fill="#fff" font-size="10" text-anchor="middle" font-weight="bold">Go Public di BEI</text></svg>` },
+            { term: "Warrant Saham", cat: "korporasi", desc: "Hak melekat pada saham baru membeli saham di harga tertentu di masa depan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="45" fill="#f59e0b" font-size="10" text-anchor="middle">Bonus Hak Tebus Saham</text><text x="100" y="70" fill="#94a3b8" font-size="8" text-anchor="middle">Masa Berlaku Terbatas</text></svg>` },
+            { term: "Delisting Saham", cat: "korporasi", desc: "Penghapusan pencatatan saham emiten dari daftar perdagangan bursa.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="30" y="30" width="140" height="40" fill="#991b1b" rx="4"/><text x="100" y="55" fill="#fff" font-size="10" text-anchor="middle">Keluar Dari Bursa Efek</text></svg>` },
+            { term: "Suspensi Saham", cat: "korporasi", desc: "Penghentian sementara perdagangan saham emiten oleh otoritas bursa.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="30" y="30" width="140" height="40" fill="#7c2d12" rx="4"/><text x="100" y="55" fill="#f97316" font-size="10" text-anchor="middle">Trading Disetop Sementara</text></svg>` },
+            { term: "Akuisisi Perusahaan", cat: "korporasi", desc: "Pengambilalihan kepemilikan mayoritas saham perusahaan lain.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><circle cx="60" cy="50" r="25" fill="#1e3a8a"/><circle cx="140" cy="50" r="25" fill="#065f46"/><path d="M 90 50 L 110 50" stroke="#f59e0b" stroke-width="3"/></svg>` },
+            { term: "Merger Usaha", cat: "korporasi", desc: "Penggabungan dua atau lebih perusahaan menjadi satu entitas baru.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="45" fill="#38bdf8" font-size="10" text-anchor="middle">Perusahaan A + Perusahaan B</text><text x="100" y="70" fill="#10b981" font-size="9" text-anchor="middle">= Entitas Tunggal Baru</text></svg>` },
+            { term: "Divestasi Aset", cat: "korporasi", desc: "Penjualan unit bisnis atau sebagian aset korporasi kepada pihak lain.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f43f5e" font-size="10" text-anchor="middle">Pelepasan Sebagian Unit Bisnis</text></svg>` },
+            { term: "Private Placement", cat: "korporasi", desc: "Penerbitan saham baru langsung kepada investor strategis tanpa ke publik.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#a855f7" font-size="10" text-anchor="middle">Penjualan Saham Non-Publik</text></svg>` },
+            { term: "Tender Offer", cat: "korporasi", desc: "Penawaran terbuka pembelian saham dari pemegang saham publik minoritas.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Penawaran Pembelian Borongan</text></svg>` },
+            { term: "Public Expose", cat: "korporasi", desc: "Paparan publik laporan kinerja keuangan dan rencana bisnis emiten.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Transparansi Kinerja ke Publik</text></svg>` },
+            { term: "Stock Bonus", cat: "korporasi", desc: "Pembagian saham gratis kepada pemegang saham dari kapitalisasi agio.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f59e0b" font-size="10" text-anchor="middle">Bonus Saham Tanpa Bayar</text></svg>` },
+            { term: "Green Shoe Option", cat: "korporasi", desc: "Opsi tambahan penawaran saham saat IPO jika permintaan pasar melonjak.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Stabilisasi Harga Pasca IPO</text></svg>` },
+            { term: "Spin-Off", cat: "korporasi", desc: "Pemisahan anak perusahaan menjadi entitas independen baru.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Pemisahan Anak Usaha Mandiri</text></svg>` },
+            { term: "Capex (Capital Expenditure)", cat: "korporasi", desc: "Belanja modal korporasi untuk investasi jangka panjang aset fisik.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f59e0b" font-size="10" text-anchor="middle">Investasi Pabrik & Infrastruktur</text></svg>` },
+            { term: "OpEx (Operational Expenditure)", cat: "korporasi", desc: "Biaya operasional rutin harian untuk menjalankan bisnis perusahaan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#94a3b8" font-size="10" text-anchor="middle">Biaya Gaji, Sewa & Utilitas</text></svg>` },
+            { term: "Goodwill Korporasi", cat: "korporasi", desc: "Nilai aset tak berwujud dari reputasi merek saat proses akuisisi.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#a855f7" font-size="10" text-anchor="middle">Nilai Reputasi & Brand Merk</text></svg>` },
+            { term: "Treasury Stock", cat: "korporasi", desc: "Saham hasil buyback yang disimpan kembali oleh perusahaan penerbit.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Saham Disimpan Perusahaan</text></svg>` },
+            { term: "Agio Saham", cat: "korporasi", desc: "Selisih lebih setoran harga jual saham di atas nilai nominalnya.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Premi Selisih Harga Nominal</text></svg>` },
+            { term: "Laporan Keuangan Audited", cat: "korporasi", desc: "Laporan resmi yang telah diperiksa oleh Kantor Akuntan Publik (KAP).", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#34d399" font-size="10" text-anchor="middle">Wajar Tanpa Pengecualian (WTP)</text></svg>` },
+
+            // --- SAHAM & PASAR (25+ items to reach 100+) ---
+            { term: "Order Book (Bid vs Ask)", cat: "saham", desc: "Tabel antrean penawaran harga beli dan jual real-time di bursa.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="15" y="20" width="80" height="60" fill="#064e3b" opacity="0.5" rx="3"/><text x="55" y="52" fill="#34d399" font-size="9" text-anchor="middle">BID (Beli)</text><rect x="105" y="20" width="80" height="60" fill="#991b1b" opacity="0.5" rx="3"/><text x="145" y="52" fill="#f43f5e" font-size="9" text-anchor="middle">ASK (Jual)</text></svg>` },
+            { term: "Auto Rejection Atas (ARA)", cat: "saham", desc: "Batasan maksimum persentase kenaikan harga saham dalam satu hari perdagangan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 80 L 180 20" stroke="#10b981" stroke-width="3"/><text x="100" y="55" fill="#10b981" font-size="10" text-anchor="middle">Max Kenaikan Harian Tercapai</text></svg>` },
+            { term: "Auto Rejection Bawah (ARB)", cat: "saham", desc: "Batasan maksimum persentase penurunan harga saham dalam satu hari perdagangan.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 20 L 180 80" stroke="#f43f5e" stroke-width="3"/><text x="100" y="55" fill="#f43f5e" font-size="10" text-anchor="middle">Max Penurunan Harian Tercapai</text></svg>` },
+            { term: "Dollar Cost Averaging (DCA)", cat: "saham", desc: "Strategi investasi rutin berkala tanpa memperhitungkan fluktuasi harga pendek.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="30" y="60" width="20" height="25" fill="#3b82f6"/><rect x="65" y="45" width="20" height="40" fill="#3b82f6"/><rect x="100" y="30" width="20" height="55" fill="#3b82f6"/><rect x="135" y="15" width="20" height="70" fill="#3b82f6"/><text x="100" y="93" fill="#38bdf8" font-size="8" text-anchor="middle">Investasi Rutin Berkala</text></svg>` },
+            { term: "Lot Saham", cat: "saham", desc: "Satuan transaksi resmi di Bursa Efek Indonesia (1 Lot = 100 lembar saham).", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="40" y="30" width="120" height="40" fill="#1e3a8a" stroke="#38bdf8" rx="4"/><text x="100" y="55" fill="#fff" font-size="10" text-anchor="middle">1 Lot = 100 Lembar Saham</text></svg>` },
+            { term: "Blue Chip Stocks", cat: "saham", desc: "Saham unggulan lapis pertama berkapitalisasi besar dan fundamental sangat kuat.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="30" y="30" width="140" height="40" fill="#1e3a8a" stroke="#f59e0b" rx="4"/><text x="100" y="55" fill="#f59e0b" font-size="10" text-anchor="middle">Saham Unggulan Pilihan Utama</text></svg>` },
+            { term: "Penny Stocks", cat: "saham", desc: "Saham lapisan ketiga berharga murah dengan volatilitas risiko sangat tinggi.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><rect x="30" y="30" width="140" height="40" fill="#7f1d1d" stroke="#f43f5e" rx="4"/><text x="100" y="55" fill="#fca5a5" font-size="10" text-anchor="middle">Saham Lapisan Ketiga Risiko Tinggi</text></svg>` },
+            { term: "Bear Market", cat: "saham", desc: "Kondisi pasar lesu di mana indeks atau saham turun > 20% dari puncak.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 20 L 180 80" stroke="#f43f5e" stroke-width="3"/><text x="100" y="55" fill="#f43f5e" font-size="10" text-anchor="middle">Pasar Turun Bearish (>20%)</text></svg>` },
+            { term: "Bull Market", cat: "saham", desc: "Kondisi pasar bergairah naik di mana harga saham mayoritas menguat.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><path d="M 20 80 L 180 20" stroke="#10b981" stroke-width="3"/><text x="100" y="55" fill="#10b981" font-size="10" text-anchor="middle">Pasar Naik Bullish</text></svg>` },
+            { term: "Net Foreign Buy", cat: "saham", desc: "Akumulasi nilai pembelian bersih saham oleh investor asing di bursa.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="45" fill="#10b981" font-size="11" text-anchor="middle" font-weight="bold">+Rp 640 Miliar Inflow</text><text x="100" y="70" fill="#94a3b8" font-size="8" text-anchor="middle">Masuknya Dana Asing ke BEI</text></svg>` },
+            { term: "Broker Summary", cat: "saham", desc: "Rekapitulasi aktivitas transaksi beli dan jual tiap pialang sekuritas.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Pantau Kode Sekuritas (KK, CC, PD)</text></svg>` },
+            { term: "Arbitrase Pasar", cat: "saham", desc: "Strategi meraup keuntungan dari selisih harga aset di dua bursa berbeda.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f59e0b" font-size="10" text-anchor="middle">Selisih Harga Antar Pasar</text></svg>` },
+            { term: "Margin Trading", cat: "saham", desc: "Fasilitas pinjaman dana dari sekuritas untuk membeli saham lebih besar.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f43f5e" font-size="10" text-anchor="middle">Pinjaman Dana Leverage Tinggi</text></svg>` },
+            { term: "Short Selling", cat: "saham", desc: "Strategi transaksi menjual saham pinjaman saat turun dan membelinya kembali.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#a855f7" font-size="10" text-anchor="middle">Spekulasi Kejatuhan Harga Saham</text></svg>` },
+            { term: "SBN Ritel (Surat Berharga Negara)", cat: "saham", desc: "Instrumen investasi aman dijamin negara untuk WNI (ORI, SR, SBR).", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="45" fill="#38bdf8" font-size="10" text-anchor="middle">Dijamin 100% Negara RI</text><text x="100" y="70" fill="#10b981" font-size="9" text-anchor="middle">Kupon Bulanan Pasti Cair</text></svg>` },
+            { term: "Reksa Dana Pasar Uang", cat: "saham", desc: "Reksa dana yang menempatkan portofolio pada instrumen pasar uang < 1 tahun.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Risiko Sangat Rendah & Likuid</text></svg>` },
+            { term: "Reksa Dana Pendapatan Tetap", cat: "saham", desc: "Reksa dana berbasis minimal 80% instrumen obligasi dan surat utang.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Portofolio Obligasi & SBN</text></svg>` },
+            { term: "Reksa Dana Saham (Equity Fund)", cat: "saham", desc: "Reksa dana mengalokasikan minimal 80% pada portofolio saham emiten.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f59e0b" font-size="10" text-anchor="middle">Return Tinggi Jangka Panjang</text></svg>` },
+            { term: "ETF (Exchange Traded Fund)", cat: "saham", desc: "Reksa dana yang diperjualbelikan di bursa saham layaknya saham biasa.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#a855f7" font-size="10" text-anchor="middle">Gabungan Reksa Dana & Saham</text></svg>` },
+            { term: "Custodian Bank", cat: "saham", desc: "Bank penyimpan aset surat berharga portofolio investor secara aman.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Lembaga Penitipan Aset Resmi</text></svg>` },
+            { term: "KSEI (Kustodian Sentral Efek Indonesia)", cat: "saham", desc: "Lembaga penyimpan dan penyelesaian efek sentral di pasar modal RI.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Pusat Data Kepemilikan Efek RI</text></svg>` },
+            { term: "KPEI (Kliring Penjaminan Efek Indonesia)", cat: "saham", desc: "Lembaga penjamin penyelesaian transaksi bursa efek Indonesia.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#f59e0b" font-size="10" text-anchor="middle">Lembaga Penjamin Kliring Bursa</text></svg>` },
+            { term: "SID (Single Investor Identification)", cat: "saham", desc: "Nomor identitas tunggal kepemilikan investor di pasar modal Indonesia.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#a855f7" font-size="10" text-anchor="middle">Nomor KTP Tunggal Investor</text></svg>` },
+            { term: "Sub Rekening Efek (SRE)", cat: "saham", desc: "Nomor rekening penyimpanan efek atas nama investor di KSEI.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#38bdf8" font-size="10" text-anchor="middle">Rekening Saham Milik Pribadi</text></svg>` },
+            { term: "RDN (Rekening Dana Nasabah)", cat: "saham", desc: "Rekening bank terpisah atas nama investor untuk transaksi jual beli saham.", svg: `<svg viewBox="0 0 200 100" class="w-full h-24 bg-slate-950 rounded-lg p-2 border border-slate-800 font-mono"><text x="100" y="50" fill="#10b981" font-size="10" text-anchor="middle">Rekening Penampung Tunai RDN</text></svg>` }
+        ];
+
+        /* ==========================================================================
+           3. SIMULATED NEWS DATABASE & CORE APPLICATION LOGIC
+           ========================================================================== */
+        const ARTICLES_DATA = [
+            {
+                id: 1,
+                title: "IHSG Menembus Rekor Baru 7,325 Didorong Aksi Beli Bersih Investor Asing Pada Saham Perbankan Big Cap",
+                category: "Pasar Modal",
+                tag: "headline",
+                date: "Hari ini, 15:30 WIB",
+                author: "Tim Analis NexaInvest",
+                readTime: "4 min baca",
+                views: "4.2k",
+                image: "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1200&q=80",
+                snippet: "Sektor keuangan memimpin penguatan bursa dengan saham BBCA, BBRI, dan BMRI mencatatkan nilai transaksi tertinggi. Total Net Foreign Inflow mencapai Rp 640 Miliar dalam sehari.",
+                content: `
+                    <h3 class="text-lg font-bold text-white">Lonjakan Transaksi Pasar Modal Indonesia</h3>
+                    <p>Indeks Harga Saham Gabungan (IHSG) kembali mencetak sejarah baru dengan menembus level psikologis 7,325 pada penutupan sesi sore ini. Penguatan dipimpin oleh saham-saham perbankan lapis pertama (big caps) seperti BBCA, BBRI, BMRI, dan BBNI yang mendapat aliran deras modal asing.</p>
+                    <h4 class="text-md font-bold text-brand-400 mt-4">Faktor Pendorong Utama</h4>
+                    <p>Stabilitas makroekonomi domestik, terjaganya inflasi di kisaran target Bank Indonesia, serta rilis laporan keuangan emiten kuartal pertama yang melampaui ekspektasi konsensus analis menjadi katalis utama.</p>
+                    <blockquote class="border-l-4 border-brand-500 pl-4 my-4 italic text-slate-300">
+                        "Investor asing terus menunjukkan kepercayaan tinggi terhadap prospek pertumbuhan ekonomi Indonesia di tengah ketidakpastian global."
+                    </blockquote>
+                    <p>Bagi investor ritel, momentum ini tetap harus diiringi dengan manajemen risiko yang ketat dan pemilihan emiten berfundamental kuat (value investing).</p>
+                `
+            },
+            {
+                id: 2,
+                title: "Astra International (ASII) Siapkan Dividen Final Rp 425 per Saham, Cum Date Akhir Maret 2026",
+                category: "Aksi Korporasi",
+                tag: "trending",
+                date: "Hari ini, 12:15 WIB",
+                author: "Riset Korporasi BEI",
+                readTime: "3 min baca",
+                views: "3.8k",
+                image: "https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=1200&q=80",
+                snippet: "PT Astra International Tbk (ASII) mengumumkan jadwal pembagian dividen tunai final untuk tahun buku 2025 dengan estimasi dividend yield mencapai 7.8%.",
+                content: `
+                    <h3 class="text-lg font-bold text-white">Jadwal Musim Dividen ASII</h3>
+                    <p>PT Astra International Tbk (ASII) resmi mengumumkan jadwal pembagian dividen tunai final sebesar Rp 425 per saham. Berdasarkan harga saham saat ini, estimasi dividend yield emiten konglomerasi ini menyentuh angka menarik di kisaran 7.8%.</p>
+                    <h4 class="text-md font-bold text-brand-400 mt-4">Tanggal Penting (Key Dates)</h4>
+                    <ul class="list-disc pl-5 space-y-1 text-slate-300">
+                        <li><strong>Cum Date Pasar Reguler & Negosiasi:</strong> 28 Maret 2026</li>
+                        <li><strong>Ex Date Pasar Reguler & Negosiasi:</strong> 31 Maret 2026</li>
+                        <li><strong>Recording Date:</strong> 02 April 2026</li>
+                        <li><strong>Payment Date:</strong> 18 April 2026</li>
+                    </ul>
+                    <p class="mt-3">Pastikan Anda memiliki saham ASII sebelum tanggal Cum Date untuk berhak mendapatkan pembayaran dividen tunai langsung ke RDN.</p>
+                `
+            },
+            {
+                id: 3,
+                title: "Strategi DCA (Dollar Cost Averaging) Bagi Pemula: Cara Menumpuk Kekayaan Saham Tanpa Stress",
+                category: "Edukasi",
+                tag: "edukasi",
+                date: "Kemarin, 19:40 WIB",
+                author: "Akademi NexaInvest",
+                readTime: "5 min baca",
+                views: "5.1k",
+                image: "https://images.unsplash.com/photo-1579621970563-ebec7560ff3e?auto=format&fit=crop&w=1200&q=80",
+                snippet: "Pelajari bagaimana teknik investasi rutin berkala setiap bulan mampu meredam risiko volatilitas pasar dan memberikan imbal hasil optimal jangka panjang.",
+                content: `
+                    <h3 class="text-lg font-bold text-white">Mengapa DCA Efektif untuk Pemula?</h3>
+                    <p>Banyak investor pemula merasa takut masuk ke pasar saham karena khawatir membeli di harga pucuk (all-time high). Strategi <strong>Dollar Cost Averaging (DCA)</strong> hadir sebagai solusi paling rasional.</p>
+                    <h4 class="text-md font-bold text-brand-400 mt-4">Prinsip Kerja DCA</h4>
+                    <p>Dengan mengalokasikan dana secara rutin setiap bulan (misal tanggal 25 setelah gaji), Anda otomatis membeli lebih banyak unit saham saat harga turun dan lebih sedikit saat harga naik.</p>
+                `
+            },
+            {
+                id: 4,
+                title: "Pemerintah Terbitkan SBN Ritel ORI025 dengan Kupon Fixed Rate 6.25% per Tahun, Aman 100% Negara",
+                category: "Obligasi",
+                tag: "trending",
+                date: "2 hari lalu",
+                author: "Divisi Riset SBN",
+                readTime: "4 min baca",
+                views: "2.9k",
+                image: "https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=1200&q=80",
+                snippet: "Kementerian Keuangan kembali membuka masa penawaran Obligasi Negara Ritel seri ORI025 dengan kupon menarik di atas rata-rata bunga deposito perbankan.",
+                content: `
+                    <h3 class="text-lg font-bold text-white">Pilihan Investasi Aman & Dijamin Negara</h3>
+                    <p>Pemerintah Indonesia melalui Kementerian Keuangan resmi menawarkan Surat Berharga Negara (SBN) Ritel jenis ORI025. Menawarkan kupon tetap (fixed rate) sebesar 6.25% per tahun dengan tenor 3 tahun.</p>
+                `
+            },
+            {
+                id: 5,
+                title: "Mengenal Analisis Fundamental: Cara Menyaring Saham Berkualitas Tinggi Layaknya Warren Buffett",
+                category: "Analisis",
+                tag: "edukasi",
+                date: "3 hari lalu",
+                author: "Tim Edukasi Pasar",
+                readTime: "6 min baca",
+                views: "3.4k",
+                image: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?auto=format&fit=crop&w=1200&q=80",
+                snippet: "Panduan lengkap memahami rasio PER, PBV, ROE, dan DER untuk menyaring emiten terbaik di Bursa Efek Indonesia.",
+                content: `
+                    <h3 class="text-lg font-bold text-white">Dasar Penilaian Perusahaan</h3>
+                    <p>Analisis fundamental adalah metode mengevaluasi nilai intrinsik saham dengan memeriksa kondisi keuangan perusahaan, manajemen, hingga prospek industri masa depan.</p>
+                `
+            },
+            {
+                id: 6,
+                title: "Sektor Perbankan Digital Kembali Bergairah, Valuasi ARTO dan BBYB Dinilai Mulai Menarik",
+                category: "Pasar Modal",
+                tag: "headline",
+                date: "4 hari lalu",
+                author: "Analis Pasar Senior",
+                readTime: "4 min baca",
+                views: "2.7k",
+                image: "https://images.unsplash.com/photo-1616077168079-7e09a677fb2c?auto=format&fit=crop&w=1200&q=80",
+                snippet: "Pertumbuhan pengguna aktif dan efisiensi biaya operasional membuat emiten bank digital kembali dilirik oleh fund manager institusi.",
+                content: `
+                    <h3 class="text-lg font-bold text-white">Kebangkitan Bank Digital</h3>
+                    <p>Setelah mengalami koreksi panjang pasca pandemi, saham-saham bank digital seperti ARTO dan BBYB mulai menunjukkan tanda-tanda akumulasi volume besar dari investor institusi.</p>
+                `
+            }
+        ];
+
+        let currentActiveCategory = 'beranda';
+        let currentNewsFilter = 'all';
+        let bookmarkedArticleIds = [1, 2];
+        let currentModalArticleId = null;
+        let isSpeechPlaying = false;
+        let tickerTimer = null;
+        let simulatorPortfolio = {
+            cash: 25000000,
+            stocks: [
+                { code: 'BBCA', buyPrice: 9800, currentPrice: 10125, lots: 20 },
+                { code: 'TLKM', buyPrice: 3750, currentPrice: 3820, lots: 40 }
+            ]
+        };
+        let userWatchlist = [
+            { code: 'BBCA', buyPrice: 9800, currentPrice: 10125, lots: 15 },
+            { code: 'BBRI', buyPrice: 5400, currentPrice: 5350, lots: 25 },
+            { code: 'TLKM', buyPrice: 3750, currentPrice: 3820, lots: 30 }
+        ];
+
+        /* ==========================================================================
+           4. INITIALIZATION & UI CONTROLLERS
+           ========================================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            initTicker();
+            renderArticles(ARTICLES_DATA);
+            renderWatchlist();
+            renderGlossary(GLOSSARY_100_TERMS);
+            initCharts();
+            updateBookmarkCount();
+            startQuoteTimer();
+            updateQuoteUI();
+        });
+
+        function switchCategory(cat) {
+            currentActiveCategory = cat;
+            
+            // Hide all views
+            document.querySelectorAll('.category-view').forEach(el => el.classList.add('hidden'));
+            
+            // Show target view
+            const targetView = document.getElementById(`view-${cat}`);
+            if (targetView) targetView.classList.remove('hidden');
+
+            // Reset navigation active styles
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('text-brand-400', 'bg-brand-950/80', 'border', 'border-brand-800/80', 'font-bold');
+                btn.classList.add('text-slate-300');
+            });
+
+            // Highlight current button
+            const activeBtn = document.getElementById(`nav-${cat}`);
+            if (activeBtn) {
+                activeBtn.classList.add('text-brand-400', 'bg-brand-950/80', 'border', 'border-brand-800/80', 'font-bold');
+                activeBtn.classList.remove('text-slate-300');
+            }
+
+            // Update Header Banner
+            const titleEl = document.getElementById('categoryTitle');
+            const descEl = document.getElementById('categoryDescription');
+            const badgeEl = document.getElementById('categoryBadge');
+
+            const titles = {
+                'beranda': 'Portal Berita Finansial & Simulator',
+                'pasar-modal': 'Pasar Saham & Indeks Harga Saham Gabungan (IHSG)',
+                'aksi-korporasi': 'Kalender Aksi Korporasi & Dividen BEI',
+                'reksa-dana': 'Benchmark Performa Reksa Dana & ETF',
+                'obligasi': 'Surat Berharga Negara (SBN) & Obligasi',
+                'analisis-strategi': 'Analisis Fundamental & Teknikal Cerdas',
+                'glosarium': 'Glosarium Investasi 100+ & Diagram Visual',
+                'simulator-hub': 'Interactive Investment Simulator Hub'
+            };
+
+            const descs = {
+                'beranda': 'Pusat analisis finansial, berita pasar modal, strategi portofolio saham, simulator investasi virtual, serta kamus istilah investasi terlengkap dengan 100+ istilah dan ilustrasi diagram visual untuk seluruh kategori.',
+                'pasar-modal': 'Analisis pergerakan harian, volume perdagangan, serta stock screener saham unggulan bursa efek Indonesia.',
+                'aksi-korporasi': 'Jadwal lengkap cum date dividen tunai, right issue, stock split, buyback, dan RUPS emiten.',
+                'reksa-dana': 'Perbandingan return reksa dana pasar uang, pendapatan tetap, campuran, dan saham secara real-time.',
+                'obligasi': 'Informasi SBN Ritel (ORI, SR, SBR), yield curve, dan instrumen surat utang negara aman.',
+                'analisis-strategi': 'Edukasi manajemen portofolio, analisis teknikal breakout, dan strategi Dollar Cost Averaging (DCA).',
+                'glosarium': 'Panduan praktis 100+ istilah pasar modal lengkap dengan ilustrasi visual dan diagram.',
+                'simulator-hub': 'Rancang strategi investasi, kelola portofolio virtual, dan uji ketahanan aset dalam skenario market stress test.'
+            };
+
+            if (titleEl) titleEl.innerText = titles[cat] || 'NexaInvest Portal';
+            if (descEl) descEl.innerText = descs[cat] || 'Informasi finansial terpadu.';
+            if (badgeEl) badgeEl.innerText = cat.toUpperCase().replace('-', ' ');
+
+            // Render category specific news if subviews exist
+            if (cat !== 'beranda' && cat !== 'glosarium' && cat !== 'simulator-hub') {
+                renderCategoryNews(cat);
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobileMenu');
+            if (menu) menu.classList.toggle('hidden');
+        }
+
+        /* ==========================================================================
+           5. MARKET TICKER & CHARTS SETUP
+           ========================================================================== */
+        const TICKER_ITEMS = [
+            { code: 'IHSG', price: '7,325.40', change: '+0.45%', up: true },
+            { code: 'BBCA', price: '10,125', change: '+1.25%', up: true },
+            { code: 'BBRI', price: '5,350', change: '-0.46%', up: false },
+            { code: 'TLKM', price: '3,820', change: '+0.79%', up: true },
+            { code: 'ASII', price: '5,450', change: '+2.10%', up: true },
+            { code: 'AMMN', price: '8,425', change: '-1.15%', up: false },
+            { code: 'GOTO', price: '61', change: '+1.66%', up: true },
+            { code: 'ADRO', price: '3,450', change: '-0.86%', up: false },
+            { code: 'BMRI', price: '6,725', change: '+1.50%', up: true },
+            { code: 'UNVR', price: '2,850', change: '-2.05%', up: false }
+        ];
+
+        function initTicker() {
+            const container = document.getElementById('tickerContent');
+            if (!container) return;
+
+            let html = '';
+            // Duplicate array for infinite seamless loop
+            const duplicated = [...TICKER_ITEMS, ...TICKER_ITEMS];
+            duplicated.forEach(item => {
+                const colorClass = item.up ? 'text-emerald-400' : 'text-rose-400';
+                const icon = item.up ? 'fa-arrow-up' : 'fa-arrow-down';
+                html += `
+                    <div class="flex items-center space-x-2 px-3 border-r border-slate-800">
+                        <span class="font-bold text-white">${item.code}</span>
+                        <span class="text-slate-300 font-mono">${item.price}</span>
+                        <span class="${colorClass} font-mono flex items-center">
+                            <i class="fa-solid ${icon} mr-0.5 text-[9px]"></i>${item.change}
+                        </span>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        let isTickSimulating = false;
+        function toggleTickSimulation() {
+            isTickSimulating = !isTickSimulating;
+            const icon = document.getElementById('tickIcon');
+            if (isTickSimulating) {
+                icon.className = "fa-solid fa-pause text-amber-400 mr-1";
+                tickerTimer = setInterval(() => {
+                    TICKER_ITEMS.forEach(t => {
+                        const delta = (Math.random() * 0.4 - 0.18).toFixed(2);
+                        let val = parseFloat(t.price.replace(/,/g, ''));
+                        val += delta;
+                        t.price = val.toLocaleString('en-US', { minimumFractionDigits: t.price.includes('.') ? 2 : 0 });
+                    });
+                    initTicker();
+                }, 2500);
+                showToast("Simulasi live tick harga aktif.", "success");
+            } else {
+                icon.className = "fa-solid fa-play text-emerald-400 mr-1";
+                if (tickerTimer) clearInterval(tickerTimer);
+                showToast("Simulasi live tick dihentikan.", "info");
+            }
+        }
+
+        function initCharts() {
+            // Home IHSG Chart
+            const ctxHome = document.getElementById('ihsgChartHome');
+            if (ctxHome) {
+                new Chart(ctxHome, {
+                    type: 'line',
+                    data: {
+                        labels: ['09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00'],
+                        datasets: [{
+                            data: [7290, 7305, 7312, 7300, 7318, 7322, 7325.4],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.3,
+                            pointRadius: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#64748b', font: { size: 10 } } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 10 } } }
+                        }
+                    }
+                });
+            }
+
+            // Detailed IHSG Chart
+            const ctxDetail = document.getElementById('ihsgDetailedChart');
+            if (ctxDetail) {
+                new Chart(ctxDetail, {
+                    type: 'line',
+                    data: {
+                        labels: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Senin', 'Selasa'],
+                        datasets: [{
+                            label: 'IHSG Close',
+                            data: [7250, 7280, 7265, 7300, 7310, 7315, 7325.4],
+                            borderColor: '#10b981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                            borderWidth: 2.5,
+                            fill: true,
+                            tension: 0.35,
+                            pointRadius: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            x: { grid: { display: false }, ticks: { color: '#94a3b8', font: { size: 11 } } },
+                            y: { grid: { color: '#1e293b' }, ticks: { color: '#94a3b8', font: { size: 11 } } }
+                        }
+                    }
+                });
+            }
+
+            // Portfolio Pie Chart
+            updatePortfolioPieChart();
+        }
+
+        let portfolioPieInstance = null;
+        function updatePortfolioPieChart() {
+            const ctxPie = document.getElementById('portfolioPieChart');
+            if (!ctxPie) return;
+
+            const labels = ['Kas (Cash)', ...simulatorPortfolio.stocks.map(s => s.code)];
+            const dataVals = [simulatorPortfolio.cash, ...simulatorPortfolio.stocks.map(s => s.currentPrice * s.lots * 100)];
+
+            if (portfolioPieInstance) {
+                portfolioPieInstance.destroy();
+            }
+
+            portfolioPieInstance = new Chart(ctxPie, {
+                type: 'doughnut',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: dataVals,
+                        backgroundColor: ['#06b6d4', '#3b82f6', '#10b981', '#f59e0b', '#a855f7', '#f43f5e'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ==========================================================================
+           6. ARTICLE & BOOKMARKS SYSTEM
+           ========================================================================== */
+        function renderArticles(articlesToRender) {
+            const grid = document.getElementById('newsGrid');
+            const countDisplay = document.getElementById('articleCountDisplay');
+            if (!grid) return;
+
+            if (countDisplay) countDisplay.innerText = articlesToRender.length;
+
+            if (articlesToRender.length === 0) {
+                grid.innerHTML = `<div class="col-span-3 text-center py-12 text-slate-400 text-xs">Tidak ada artikel ditemukan.</div>`;
+                return;
+            }
+
+            let html = '';
+            articlesToRender.forEach(art => {
+                const isBookmarked = bookmarkedArticleIds.includes(art.id);
+                const bookmarkClass = isBookmarked ? 'text-amber-400 bg-amber-950/80 border-amber-800' : 'text-slate-400 bg-slate-900 border-slate-800';
+                
+                html += `
+                    <div class="glass-panel rounded-2xl overflow-hidden flex flex-col justify-between group transition-all duration-300">
+                        <div>
+                            <div class="relative h-48 overflow-hidden">
+                                <img src="${art.image}" alt="${art.title}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 opacity-80">
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent"></div>
+                                <span class="absolute top-3 left-3 bg-brand-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-md shadow">${art.category}</span>
+                                <button onclick="event.stopPropagation(); toggleBookmark(${art.id})" class="absolute top-3 right-3 p-1.5 rounded-lg border backdrop-blur-md ${bookmarkClass} transition">
+                                    <i class="fa-${isBookmarked ? 'solid' : 'regular'} fa-bookmark text-xs"></i>
+                                </button>
+                            </div>
+                            <div class="p-5 space-y-2">
+                                <div class="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
+                                    <span><i class="fa-regular fa-clock mr-1 text-brand-400"></i> ${art.date}</span>
+                                    <span>•</span>
+                                    <span>${art.readTime}</span>
+                                </div>
+                                <h3 onclick="openArticleModal(${art.id})" class="font-bold text-white text-base leading-snug group-hover:text-brand-400 transition-colors cursor-pointer line-clamp-2">
+                                    ${art.title}
+                                </h3>
+                                <p class="text-slate-400 text-xs line-clamp-2 leading-relaxed">
+                                    ${art.snippet}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="p-5 pt-0 flex items-center justify-between text-xs border-t border-slate-800/60 mt-4">
+                            <span class="text-slate-400 font-mono"><i class="fa-solid fa-user-pen mr-1 text-brand-400"></i> ${art.author}</span>
+                            <button onclick="openArticleModal(${art.id})" class="text-brand-400 font-bold hover:underline flex items-center">
+                                Baca <i class="fa-solid fa-arrow-right ml-1 text-[10px]"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function filterNewsCategory(tag) {
+            currentNewsFilter = tag;
+            
+            // Highlight pills
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                btn.className = "filter-pill bg-slate-900 hover:bg-brand-900 text-slate-300 text-xs px-3.5 py-1.5 rounded-full font-medium transition-all border border-slate-800 shrink-0";
+            });
+            event.target.className = "filter-pill bg-brand-600 text-white text-xs px-3.5 py-1.5 rounded-full font-bold transition-all shadow-md shadow-brand-600/30 shrink-0";
+
+            if (tag === 'all') {
+                renderArticles(ARTICLES_DATA);
+            } else {
+                const filtered = ARTICLES_DATA.filter(a => a.tag === tag || a.category.toLowerCase().includes(tag));
+                renderArticles(filtered);
+            }
+        }
+
+        function renderCategoryNews(cat) {
+            const container = document.getElementById(`categoryNews-${cat}`);
+            if (!container) return;
+
+            const matched = ARTICLES_DATA.filter(a => a.category.toLowerCase().includes(cat.replace('-', ' ')) || a.tag === 'edukasi');
+            const target = matched.length > 0 ? matched : ARTICLES_DATA.slice(0, 3);
+
+            let html = '';
+            target.forEach(art => {
+                html += `
+                    <div class="glass-panel p-5 rounded-xl space-y-2 cursor-pointer group" onclick="openArticleModal(${art.id})">
+                        <span class="text-[10px] bg-brand-950 text-brand-400 px-2 py-0.5 rounded border border-brand-800 font-mono">${art.category}</span>
+                        <h4 class="font-bold text-white text-sm group-hover:text-brand-400 transition line-clamp-2">${art.title}</h4>
+                        <p class="text-xs text-slate-400 line-clamp-2">${art.snippet}</p>
+                        <div class="text-[11px] text-slate-500 font-mono pt-2">${art.date} • ${art.readTime}</div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        function openArticleModal(id) {
+            const art = ARTICLES_DATA.find(a => a.id === id);
+            if (!art) return;
+
+            currentModalArticleId = id;
+            const modal = document.getElementById('articleModal');
+            const body = document.getElementById('articleModalBody');
+            const badge = document.getElementById('modalCategoryBadge');
+            const readTime = document.getElementById('modalReadTime');
+            const bookmarkBtn = document.getElementById('modalBookmarkBtn');
+
+            if (badge) badge.innerText = art.category;
+            if (readTime.innerHTML) readTime.innerHTML = `<i class="fa-regular fa-clock mr-1"></i> ${art.readTime} • <i class="fa-solid fa-eye ml-1"></i> ${art.views}`;
+            
+            const isBookmarked = bookmarkedArticleIds.includes(art.id);
+            if (bookmarkBtn) {
+                bookmarkBtn.innerHTML = `<i class="fa-${isBookmarked ? 'solid' : 'regular'} fa-bookmark text-sm"></i>`;
+            }
+
+            if (body) {
+                body.innerHTML = `
+                    <h2 class="text-2xl font-black text-white leading-snug">${art.title}</h2>
+                    <div class="flex items-center space-x-3 text-xs text-slate-400 font-mono border-b border-slate-800 pb-3">
+                        <span><i class="fa-regular fa-calendar mr-1 text-brand-400"></i> ${art.date}</span>
+                        <span>•</span>
+                        <span><i class="fa-solid fa-user-pen mr-1 text-brand-400"></i> ${art.author}</span>
+                    </div>
+                    <img src="${art.image}" alt="${art.title}" class="w-full h-64 object-cover rounded-xl my-4 opacity-90 border border-slate-800">
+                    <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                        ${art.content}
+                    </div>
+                `;
+            }
+
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeArticleModal() {
+            const modal = document.getElementById('articleModal');
+            if (modal) modal.classList.add('hidden');
+            if (isSpeechPlaying) {
+                window.speechSynthesis.cancel();
+                isSpeechPlaying = false;
+                updateSpeechButtonUI();
+            }
+        }
+
+        function toggleBookmark(id) {
+            const index = bookmarkedArticleIds.indexOf(id);
+            if (index > -1) {
+                bookmarkedArticleIds.splice(index, 1);
+                showToast("Artikel dihapus dari daftar tersimpan.", "info");
+            } else {
+                bookmarkedArticleIds.push(id);
+                showToast("Artikel berhasil disimpan!", "success");
+            }
+            updateBookmarkCount();
+            renderArticles(ARTICLES_DATA);
+            if (currentModalArticleId === id) {
+                const bookmarkBtn = document.getElementById('modalBookmarkBtn');
+                const isBookmarked = bookmarkedArticleIds.includes(id);
+                if (bookmarkBtn) bookmarkBtn.innerHTML = `<i class="fa-${isBookmarked ? 'solid' : 'regular'} fa-bookmark text-sm"></i>`;
+            }
+        }
+
+        function toggleBookmarkCurrentArticle() {
+            if (currentModalArticleId) {
+                toggleBookmark(currentModalArticleId);
+            }
+        }
+
+        function updateBookmarkCount() {
+            const badge = document.getElementById('bookmarkCount');
+            if (badge) badge.innerText = bookmarkedArticleIds.length;
+        }
+
+        function openBookmarksModal() {
+            const modal = document.getElementById('bookmarksModal');
+            const list = document.getElementById('bookmarksList');
+            if (!modal || !list) return;
+
+            if (bookmarkedArticleIds.length === 0) {
+                list.innerHTML = `<p class="text-slate-400 text-center py-6">Belum ada artikel tersimpan.</p>`;
+            } else {
+                let html = '';
+                bookmarkedArticleIds.forEach(id => {
+                    const art = ARTICLES_DATA.find(a => a.id === id);
+                    if (art) {
+                        html += `
+                            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between cursor-pointer hover:border-brand-500 transition" onclick="closeBookmarksModal(); openArticleModal(${art.id})">
+                                <div class="pr-3">
+                                    <span class="text-[10px] text-brand-400 font-mono">${art.category}</span>
+                                    <h4 class="font-bold text-white text-xs line-clamp-1">${art.title}</h4>
+                                </div>
+                                <button onclick="event.stopPropagation(); toggleBookmark(${art.id}); openBookmarksModal();" class="text-slate-400 hover:text-rose-400 p-1">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        `;
+                    }
+                });
+                list.innerHTML = html;
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeBookmarksModal() {
+            const modal = document.getElementById('bookmarksModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        /* ==========================================================================
+           7. TEXT TO SPEECH (TTS) AUDIO READER
+           ========================================================================== */
+        function toggleSpeech() {
+            if (!('speechSynthesis' in window)) {
+                alert("Browser Anda tidak mendukung fitur pembaca suara.");
+                return;
+            }
+
+            if (isSpeechPlaying) {
+                window.speechSynthesis.cancel();
+                isSpeechPlaying = false;
+                updateSpeechButtonUI();
+            } else {
+                const art = ARTICLES_DATA.find(a => a.id === currentModalArticleId);
+                if (!art) return;
+
+                const textToRead = `${art.title}. ${art.snippet}`;
+                const utterance = new SpeechSynthesisUtterance(textToRead);
+                utterance.lang = 'id-ID';
+                utterance.rate = 1.0;
+
+                utterance.onend = () => {
+                    isSpeechPlaying = false;
+                    updateSpeechButtonUI();
+                };
+
+                window.speechSynthesis.speak(utterance);
+                isSpeechPlaying = true;
+                updateSpeechButtonUI();
+                showToast("Memulai pembacaan berita...", "info");
+            }
+        }
+
+        function updateSpeechButtonUI() {
+            const btnText = document.getElementById('speechBtnText');
+            const btn = document.getElementById('speechBtn');
+            if (btnText && btn) {
+                if (isSpeechPlaying) {
+                    btnText.innerText = "Berhenti";
+                    btn.classList.replace('border-brand-800', 'border-rose-500');
+                    btn.classList.replace('text-brand-400', 'text-rose-400');
+                } else {
+                    btnText.innerText = "Dengarkan";
+                    btn.classList.replace('border-rose-500', 'border-brand-800');
+                    btn.classList.replace('text-rose-400', 'text-brand-400');
+                }
+            }
+        }
+
+        /* ==========================================================================
+           8. GLOSSARY 100+ FILTER & RENDER ENGINE
+           ========================================================================== */
+        let currentGlossaryCat = 'all';
+
+        function renderGlossary(termsArray) {
+            const grid = document.getElementById('glossaryGrid');
+            const countEl = document.getElementById('glossaryCount');
+            if (!grid) return;
+
+            if (countEl) countEl.innerText = termsArray.length;
+
+            if (termsArray.length === 0) {
+                grid.innerHTML = `<div class="col-span-3 text-center py-12 text-slate-400 text-xs">Istilah glosarium tidak ditemukan.</div>`;
+                return;
+            }
+
+            let html = '';
+            termsArray.forEach(item => {
+                const badgeColor = 
+                    item.cat === 'fundamental' ? 'bg-emerald-950 text-emerald-400 border-emerald-800' :
+                    item.cat === 'teknikal' ? 'bg-amber-950 text-amber-400 border-amber-800' :
+                    item.cat === 'korporasi' ? 'bg-purple-950 text-purple-400 border-purple-800' : 'bg-cyan-950 text-cyan-400 border-cyan-800';
+
+                html += `
+                    <div class="glass-panel p-5 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-3 group hover:border-cyan-500/50 transition">
+                        <div>
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-[10px] font-mono px-2 py-0.5 rounded border uppercase font-bold ${badgeColor}">${item.cat}</span>
+                                <span class="text-[10px] text-slate-500 font-mono"><i class="fa-solid fa-book-bookmark mr-1"></i> Kamus 100+</span>
+                            </div>
+                            <h3 class="font-bold text-white text-base group-hover:text-cyan-400 transition-colors">${item.term}</h3>
+                            <p class="text-xs text-slate-300 mt-1.5 leading-relaxed">${item.desc}</p>
+                        </div>
+                        <div class="pt-2 border-t border-slate-800/60">
+                            ${item.svg}
+                        </div>
+                    </div>
+                `;
+            });
+            grid.innerHTML = html;
+        }
+
+        function filterGlossaryCategory(cat) {
+            currentGlossaryCat = cat;
+
+            document.querySelectorAll('.glossary-cat-btn').forEach(btn => {
+                btn.className = "glossary-cat-btn bg-slate-900 hover:bg-cyan-950 text-slate-300 border border-slate-800 font-bold px-3.5 py-1.5 rounded-lg shrink-0";
+            });
+            const activeBtn = document.getElementById(`gcat-${cat}`);
+            if (activeBtn) {
+                activeBtn.className = "glossary-cat-btn bg-cyan-600 text-white px-3.5 py-1.5 rounded-lg font-bold shrink-0 shadow-md";
+            }
+
+            if (cat === 'all') {
+                renderGlossary(GLOSSARY_100_TERMS);
+            } else {
+                const filtered = GLOSSARY_100_TERMS.filter(i => i.cat === cat);
+                renderGlossary(filtered);
+            }
+        }
+
+        function filterGlossary() {
+            const query = document.getElementById('glossarySearch').value.toLowerCase();
+            let subset = GLOSSARY_100_TERMS;
+            if (currentGlossaryCat !== 'all') {
+                subset = subset.filter(i => i.cat === currentGlossaryCat);
+            }
+
+            const results = subset.filter(i => i.term.toLowerCase().includes(query) || i.desc.toLowerCase().includes(query));
+            renderGlossary(results);
+        }
+
+        /* ==========================================================================
+           9. WATCHLIST & SIMULATOR PORTFOLIO SYSTEM
+           ========================================================================== */
+        function renderWatchlist() {
+            const tbody = document.getElementById('watchlistTableBody');
+            if (!tbody) return;
+
+            if (userWatchlist.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-slate-400">Watchlist portofolio kosong.</td></tr>`;
+                return;
+            }
+
+            let html = '';
+            userWatchlist.forEach((s, idx) => {
+                const totalVal = s.currentPrice * s.lots * 100;
+                const buyVal = s.buyPrice * s.lots * 100;
+                const profit = totalVal - buyVal;
+                const profitPct = ((profit / buyVal) * 100).toFixed(2);
+                const profitClass = profit >= 0 ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+
+                html += `
+                    <tr class="hover:bg-slate-900/50">
+                        <td class="p-3 font-bold text-brand-400">${s.code}</td>
+                        <td class="p-3">Rp ${s.buyPrice.toLocaleString()}</td>
+                        <td class="p-3 font-bold">Rp ${s.currentPrice.toLocaleString()}</td>
+                        <td class="p-3">${s.lots} Lot</td>
+                        <td class="p-3 font-semibold">Rp ${totalVal.toLocaleString()}</td>
+                        <td class="p-3 ${profitClass}">${profit >= 0 ? '+' : ''}Rp ${profit.toLocaleString()} (${profitPct}%)</td>
+                        <td class="p-3">
+                            <button onclick="removeStockFromWatchlist(${idx})" class="text-slate-400 hover:text-rose-400"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html;
+        }
+
+        function addStockToWatchlist() {
+            const code = document.getElementById('simCode').value.toUpperCase().trim();
+            const buyPrice = parseFloat(document.getElementById('simBuyPrice').value);
+            const lots = parseInt(document.getElementById('simLots').value);
+
+            if (!code || isNaN(buyPrice) || isNaN(lots)) {
+                showToast("Harap isi seluruh formulir saham dengan benar.", "info");
+                return;
+            }
+
+            // Random mock current price around buy price
+            const currentPrice = Math.round(buyPrice * (1 + (Math.random() * 0.1 - 0.04)));
+
+            userWatchlist.push({ code, buyPrice, currentPrice, lots });
+            renderWatchlist();
+            showToast(`Saham ${code} berhasil ditambahkan ke portofolio!`, "success");
+
+            document.getElementById('simCode').value = '';
+            document.getElementById('simBuyPrice').value = '';
+            document.getElementById('simLots').value = '';
+        }
+
+        function removeStockFromWatchlist(idx) {
+            userWatchlist.splice(idx, 1);
+            renderWatchlist();
+            showToast("Saham dihapus dari watchlist.", "info");
+        }
+
+        function resetWatchlistToDefault() {
+            userWatchlist = [
+                { code: 'BBCA', buyPrice: 9800, currentPrice: 10125, lots: 15 },
+                { code: 'BBRI', buyPrice: 5400, currentPrice: 5350, lots: 25 },
+                { code: 'TLKM', buyPrice: 3750, currentPrice: 3820, lots: 30 }
+            ];
+            renderWatchlist();
+            showToast("Watchlist diatur ulang ke kondisi default.", "info");
+        }
+
+        function buyStockInSimulator() {
+            const selectVal = document.getElementById('simHubStockSelect').value.split('|');
+            const code = selectVal[0];
+            const price = parseFloat(selectVal[1]);
+            const lots = parseInt(document.getElementById('simHubLotInput').value);
+            const totalCost = price * lots * 100;
+
+            if (simulatorPortfolio.cash < totalCost) {
+                showToast("Kas virtual tidak mencukupi untuk transaksi ini!", "info");
+                return;
+            }
+
+            simulatorPortfolio.cash -= totalCost;
+            simulatorPortfolio.stocks.push({ code, buyPrice: price, currentPrice: price, lots });
+            
+            updateSimulatorHubUI();
+            showToast(`Berhasil membeli ${lots} lot ${code} senilai Rp ${totalCost.toLocaleString()}`, "success");
+        }
+
+        function updateSimulatorHubUI() {
+            let totalStockVal = 0;
+            let totalBuyVal = 0;
+
+            simulatorPortfolio.stocks.forEach(s => {
+                totalStockVal += s.currentPrice * s.lots * 100;
+                totalBuyVal += s.buyPrice * s.lots * 100;
+            });
+
+            const totalPortfolioVal = simulatorPortfolio.cash + totalStockVal;
+            const unrealized = totalStockVal - totalBuyVal;
+            const returnPct = totalBuyVal > 0 ? ((unrealized / totalBuyVal) * 100).toFixed(2) : '0.00';
+
+            document.getElementById('simHubTotalValue').innerText = `Rp ${totalPortfolioVal.toLocaleString()}`;
+            document.getElementById('simHubCash').innerText = `Rp ${simulatorPortfolio.cash.toLocaleString()}`;
+            document.getElementById('simHubUnrealized').innerText = `${unrealized >= 0 ? '+' : ''}Rp ${unrealized.toLocaleString()}`;
+            
+            const retEl = document.getElementById('simHubTotalReturn');
+            if (retEl) {
+                retEl.innerText = `${returnPct >= 0 ? '+' : ''}${returnPct}% Total Return`;
+                retEl.className = `text-xs font-bold font-mono mt-1 block ${returnPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`;
+            }
+
+            updatePortfolioPieChart();
+        }
+
+        function runScenario(type) {
+            const factor = type === 'bull' ? 1.20 : 0.75;
+            simulatorPortfolio.stocks.forEach(s => {
+                s.currentPrice = Math.round(s.buyPrice * factor);
+            });
+            updateSimulatorHubUI();
+            showToast(type === 'bull' ? "Market Stress Test: Bull Scenario (+20%)" : "Market Stress Test: Crash Scenario (-25%)", type === 'bull' ? "success" : "info");
+        }
+
+        function resetScenario() {
+            simulatorPortfolio.cash = 25000000;
+            simulatorPortfolio.stocks = [
+                { code: 'BBCA', buyPrice: 9800, currentPrice: 10125, lots: 20 },
+                { code: 'TLKM', buyPrice: 3750, currentPrice: 3820, lots: 40 }
+            ];
+            updateSimulatorHubUI();
+            showToast("Simulator diatur ulang ke kondisi awal.", "info");
+        }
+
+        /* ==========================================================================
+           10. FINANCIAL CALCULATORS & RISK QUIZ MODALS
+           ========================================================================== */
+        function openCalcModal() {
+            document.getElementById('calcModal').classList.remove('hidden');
+        }
+        function closeCalcModal() {
+            document.getElementById('calcModal').classList.add('hidden');
+        }
+        function switchCalcTab(tab) {
+            if (tab === 'compound') {
+                document.getElementById('calcView-compound').classList.remove('hidden');
+                document.getElementById('calcView-dividend').classList.add('hidden');
+                document.getElementById('calcTab-compound').className = "flex-1 py-3 border-b-2 border-brand-500 text-brand-400 bg-brand-950/30 font-bold";
+                document.getElementById('calcTab-dividend').className = "flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-white";
+            } else {
+                document.getElementById('calcView-compound').classList.add('hidden');
+                document.getElementById('calcView-dividend').classList.remove('hidden');
+                document.getElementById('calcTab-dividend').className = "flex-1 py-3 border-b-2 border-cyan-500 text-cyan-400 bg-cyan-950/30 font-bold";
+                document.getElementById('calcTab-compound').className = "flex-1 py-3 border-b-2 border-transparent text-slate-400 hover:text-white";
+            }
+        }
+
+        function calculateCompoundInterest() {
+            const initial = parseFloat(document.getElementById('calcInitial').value) || 0;
+            const monthly = parseFloat(document.getElementById('calcMonthly').value) || 0;
+            const rate = (parseFloat(document.getElementById('calcReturnRate').value) || 0) / 100;
+            const years = parseInt(document.getElementById('calcYears').value) || 1;
+
+            let totalPrincipal = initial;
+            let totalVal = initial;
+
+            for (let y = 0; y < years; y++) {
+                for (let m = 0; m < 12; m++) {
+                    totalVal += monthly;
+                    totalPrincipal += monthly;
+                    totalVal += (totalVal * (rate / 12));
+                }
+            }
+
+            const interestEarned = totalVal - totalPrincipal;
+
+            document.getElementById('calcTotalPrincipal').innerText = `Rp ${Math.round(totalPrincipal).toLocaleString()}`;
+            document.getElementById('calcTotalInterest').innerText = `Rp ${Math.round(interestEarned).toLocaleString()}`;
+            document.getElementById('calcFinalResult').innerText = `Rp ${Math.round(totalVal).toLocaleString()}`;
+            showToast("Perhitungan bunga bergulung berhasil diperbarui.", "success");
+        }
+
+        function calculateDividendYield() {
+            const val = parseFloat(document.getElementById('divTotalValue').value) || 0;
+            const yieldPct = (parseFloat(document.getElementById('divYield').value) || 0) / 100;
+            const annual = val * yieldPct;
+            const monthly = annual / 12;
+
+            document.getElementById('divAnnual').innerText = `Rp ${Math.round(annual).toLocaleString()}`;
+            document.getElementById('divMonthly').innerText = `Rp ${Math.round(monthly).toLocaleString()} / bln`;
+            showToast("Estimasi pasif income dihitung.", "success");
+        }
+
+        function openRiskQuizModal() {
+            const modal = document.getElementById('riskQuizModal');
+            const content = document.getElementById('quizContent');
+            if (!modal || !content) return;
+
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-white text-sm">Pertanyaan 1 dari 3: Bagaimana reaksi Anda jika portofolio saham turun -15% dalam seminggu?</h4>
+                    <div class="space-y-2">
+                        <button onclick="answerQuiz(1)" class="w-full text-left p-3 bg-slate-950 hover:bg-slate-800 rounded-xl border border-slate-800 transition">A. Panik dan langsung menjual seluruh saham untuk mengamankan sisa kas.</button>
+                        <button onclick="answerQuiz(2)" class="w-full text-left p-3 bg-slate-950 hover:bg-slate-800 rounded-xl border border-slate-800 transition">B. Diamkan saja dan menunggu harga pulih kembali.</button>
+                        <button onclick="answerQuiz(3)" class="w-full text-left p-3 bg-slate-950 hover:bg-slate-800 rounded-xl border border-slate-800 transition">C. Menganggapnya sebagai diskon dan menambah pembelian (DCA).</button>
+                    </div>
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        }
+
+        function closeRiskQuizModal() {
+            document.getElementById('riskQuizModal').classList.add('hidden');
+        }
+
+        function answerQuiz(score) {
+            const content = document.getElementById('quizContent');
+            let profile = score === 1 ? "Konservatif (Pasar Uang / SBN)" : score === 2 ? "Moderat (Campuran / Pendapatan Tetap)" : "Agresif (Saham Growth / Crypto)";
+            
+            content.innerHTML = `
+                <div class="space-y-4 text-center py-6">
+                    <i class="fa-solid fa-circle-check text-emerald-400 text-4xl"></i>
+                    <h4 class="font-bold text-white text-base">Hasil Tes Profil Risiko Anda:</h4>
+                    <div class="p-4 bg-slate-950 rounded-xl border border-emerald-500/50 text-emerald-400 font-bold text-sm">
+                        ${profile}
+                    </div>
+                    <p class="text-slate-400">Profil ini direkomendasikan untuk panduan alokasi portofolio investasi Anda di NexaInvest.</p>
+                    <button onclick="closeRiskQuizModal()" class="px-6 py-2 bg-brand-600 text-white font-bold rounded-xl">Selesai</button>
+                </div>
+            `;
+        }
+
+        /* ==========================================================================
+           11. SEARCH & TOAST UTILITIES
+           ========================================================================== */
+        function handleGlobalSearch() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            if (query.length > 2) {
+                const matched = ARTICLES_DATA.filter(a => a.title.toLowerCase().includes(query) || a.snippet.toLowerCase().includes(query));
+                renderArticles(matched);
+                if (currentActiveCategory !== 'beranda') {
+                    switchCategory('beranda');
+                }
+            } else if (query.length === 0) {
+                renderArticles(ARTICLES_DATA);
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toastNotification');
+            const msg = document.getElementById('toastMessage');
+            const icon = document.getElementById('toastIcon');
+            
+            if (msg) msg.innerText = message;
+            if (icon) {
+                icon.className = type === 'success' ? 'w-8 h-8 rounded-lg bg-emerald-950 text-emerald-400 flex items-center justify-center shrink-0' : 'w-8 h-8 rounded-lg bg-brand-950 text-brand-400 flex items-center justify-center shrink-0';
+                icon.innerHTML = type === 'success' ? '<i class="fa-solid fa-check text-sm"></i>' : '<i class="fa-solid fa-bell text-sm"></i>';
+            }
+
+            if (toast) {
+                toast.classList.remove('translate-x-full');
+                setTimeout(() => {
+                    hideToast();
+                }, 3500);
+            }
+        }
+
+        function hideToast() {
+            const toast = document.getElementById('toastNotification');
+            if (toast) toast.classList.add('translate-x-full');
+        }
+
+        function shareArticle() {
+            showToast("Tautan artikel berhasil disalin ke clipboard!", "success");
+        }
+    </script>
+</body>
+</html>
